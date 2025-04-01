@@ -101,7 +101,7 @@ class LightPDFProcessor:
 
 async def main():
     # 更改文件夹路径
-    pdf_path = "/data/zhongxing/Agent/PPTAgent/2503.18227v3.pdf"
+    pdf_path = "./2503.18227v3.pdf"
 
     processor = LightPDFProcessor(pdf_path)
 
