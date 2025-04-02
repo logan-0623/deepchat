@@ -1,0 +1,16 @@
+{
+    "api_key": "sk-your-api-key-here",
+    "api_base": "https://api.deepseek.com/v1",
+    "model": "deepseek-chat",
+    "temperature": 0.7,
+    "max_tokens": 2000,
+    "upload_limit_mb": 10,
+    "allowed_file_types": [
+        "application/pdf",
+        "text/plain",
+        "text/csv",
+        "text/markdown"
+    ],
+    "ssl_verify": false,
+    "debug": true
+} 

@@ -1,0 +1,8 @@
+INFO:     Started server process [27023]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 48] error while attempting to bind on address ('0.0.0.0', 9000): address already in use
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+初始化 AsyncLLM: model=deepseek-chat, api_base=https://api.deepseek.com/v1
+LLM API连接成功
