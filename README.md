@@ -157,6 +157,8 @@ export DEEPCHAT_UPLOAD_MAX_SIZE=10485760
 - For WebSocket connection issues, ensure your browser supports WebSockets
 - If you see "API Key not set" warnings, follow the configuration steps above
 
+# 中文安装指南🧭
+ 
 ## 功能特性
 
 - **实时对话**: 使用WebSocket实现流式响应，无需刷新页面
