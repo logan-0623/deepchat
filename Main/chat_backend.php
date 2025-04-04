@@ -10,7 +10,7 @@ ini_set('error_log', 'php_errors.log');
 require_once 'Chat.php';  // 引入PDF处理类
 
 class ChatBackend {
-    private $apiKey = "sk-c5f415578acb43a99871b38d273cafb7";
+    private $apiKey = "";
     private $apiUrl = "https://api.deepseek.com/v1/chat/completions";
     private $uploadDir = "uploads/";
 

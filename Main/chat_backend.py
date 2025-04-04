@@ -23,7 +23,7 @@ class ChatBackend {
         } else {
             // 默认配置
             $this->config = [
-                'api_key' => 'sk-c5f415578acb43a99871b38d273cafb7',
+                'api_key' => '',
                 'api_base' => 'https://api.deepseek.com/v1',
                 'model' => 'deepseek-chat',
                 'temperature' => 0.7,

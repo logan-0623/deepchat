@@ -9,6 +9,7 @@ fi
 # 检查依赖
 echo "检查和安装依赖..."
 python3 -m pip install fastapi uvicorn aiohttp python-multipart
+python3 -m pip install -r requirements.txt
 
 # 确保存在必要的目录
 mkdir -p uploads runs cache

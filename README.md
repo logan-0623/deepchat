@@ -1,6 +1,161 @@
-# Deepchat AI 系统
+# DeepChat
 
-基于FastAPI和WebSocket构建的实时聊天和文档处理系统。
+DeepChat is an AI chat application that supports both text conversations and PDF file processing.
+
+## Requirements
+
+- Python 3.8+
+- PHP server
+- Conda (for environment management)
+
+## Setup
+
+### 1. Create and Activate Virtual Environment
+
+```bash
+# Create a new conda environment named 'ai'
+conda create -n ai python=3.9
+
+# Activate the environment
+conda activate ai
+```
+
+### 2. Install Dependencies
+
+```bash
+# Navigate to project directory
+cd deepchat
+
+# Install required packages
+pip install fastapi uvicorn aiohttp PyPDF2
+pip install python-multipart
+```
+
+### 3. API Key Configuration
+
+You have three options to configure your API key:
+
+#### Option 1: Environment Variables
+
+Set the API key as an environment variable:
+
+```bash
+# Linux/macOS
+export DEEPCHAT_API_KEY="your-api-key-here"
+
+# Windows (Command Prompt)
+set DEEPCHAT_API_KEY=your-api-key-here
+
+# Windows (PowerShell)
+$env:DEEPCHAT_API_KEY="your-api-key-here"
+```
+
+#### Option 2: Config File
+
+The application will automatically create a `config.json` file on first run. You can edit this file to add your API key:
+
+```json
+{
+    "api_key": "your-api-key-here",
+    "api_base": "https://api.deepseek.com/v1",
+    "model": "deepseek-chat",
+    "temperature": 0.7,
+    "max_tokens": 1000,
+    "upload_max_size": 10485760
+}
+```
+
+#### Option 3: API Endpoint
+
+Once the application is running, you can use the config API endpoint to update settings:
+
+```bash
+curl -X POST "http://localhost:8000/api/config" \
+     -H "Content-Type: application/json" \
+     -d '{"api_key": "your-api-key-here"}'
+```
+
+## Running the Application
+
+### 1. Start the Backend Server
+
+```bash
+# Make sure you're in the project directory
+cd deepchat
+
+# Activate the environment
+conda activate ai
+
+# Start the backend server
+python backend.py
+```
+
+The backend server will run on port 8000 by default.
+
+### 2. Start the Frontend Server
+
+In a new terminal:
+
+```bash
+# Navigate to the project directory
+cd deepchat
+
+# Start PHP development server
+php -S localhost:8001 -t .
+```
+
+### 3. Access the Application
+
+Open your browser and go to:
+
+```
+http://localhost:8001/Main/Chat_Interface.php
+```
+
+## Features
+
+- Real-time chat with AI
+- PDF document processing and analysis
+- File upload and processing
+- WebSocket for real-time updates
+- Centralized configuration management
+
+## Project Structure
+
+- `backend.py`: FastAPI server handling chat and file processing
+- `Main/Chat_Interface.php`: Main chat interface
+- `uploads/`: Directory for uploaded files
+- `runs/`: Directory for storing task results
+- `cache/`: Cache directory
+- `config.json`: Configuration file for API settings
+
+## Advanced Configuration
+
+You can configure additional parameters using environment variables:
+
+```bash
+# API base URL
+export DEEPCHAT_API_BASE="https://api.deepseek.com/v1"
+
+# Model name
+export DEEPCHAT_MODEL="deepseek-chat"
+
+# Temperature setting (0.0-1.0)
+export DEEPCHAT_TEMPERATURE=0.7
+
+# Maximum token length
+export DEEPCHAT_MAX_TOKENS=1000
+
+# Maximum upload file size in bytes
+export DEEPCHAT_UPLOAD_MAX_SIZE=10485760
+```
+
+## Troubleshooting
+
+- If you encounter issues with PDF processing, ensure PyPDF2 is installed
+- Check your API key if you receive authentication errors
+- For WebSocket connection issues, ensure your browser supports WebSockets
+- If you see "API Key not set" warnings, follow the configuration steps above
 
 ## 功能特性
 

@@ -7,7 +7,7 @@ class LightPDFProcessor {
     private $pdfPath;
     private $taskId;
     private $cacheDir;
-    private $apiKey = "sk-c5f415578acb43a99871b38d273cafb7";
+    private $apiKey = "";
     private $apiUrl = "https://api.deepseek.com/v1/chat/completions";
 
     public function __construct($pdfPath) {
