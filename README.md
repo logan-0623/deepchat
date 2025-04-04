@@ -13,11 +13,11 @@ DeepChat is an AI chat application that supports both text conversations and PDF
 ### 1. Create and Activate Virtual Environment
 
 ```bash
-# Create a new conda environment named 'ai'
-conda create -n ai python=3.9
+# Create a new conda environment named 'deepchat'
+conda create -n deepchat python=3.9
 
 # Activate the environment
-conda activate ai
+conda activate deepchat
 ```
 
 ### 2. Install Dependencies
@@ -84,7 +84,7 @@ curl -X POST "http://localhost:8000/api/config" \
 cd deepchat
 
 # Activate the environment
-conda activate ai
+conda activate deepchat
 
 # Start the backend server
 python backend.py
@@ -251,25 +251,7 @@ bash start_backend.sh
 └── Background/       # 背景图像
 ```
 
-## 故障排除
 
-### 无法连接到后端服务
-
-- 确保后端服务正在运行(`python backend.py`)
-- 检查防火墙设置，确保9000端口开放
-- 检查浏览器控制台是否有错误消息
-
-### WebSocket连接错误
-
-- 确保WebSocket URL配置正确(ws://127.0.0.1:9000)
-- 检查是否有代理或VPN阻止WebSocket连接
-- 尝试使用IP地址而不是localhost
-
-### API调用失败
-
-- 检查API密钥是否正确
-- 确保API基础URL配置正确
-- 查看后端控制台日志以获取详细错误信息
 
 ## 许可证
 
