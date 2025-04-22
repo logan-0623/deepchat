@@ -24,7 +24,7 @@ class ChatBackend {
         if (headers_sent()) {
             error_log('Headers already sent when trying to send JSON response');
         }
-        
+
         $jsonResponse = json_encode($data, JSON_UNESCAPED_UNICODE);
         if ($jsonResponse === false) {
             error_log('JSON encode error: ' . json_last_error_msg());
@@ -33,7 +33,7 @@ class ChatBackend {
                 'message' => 'JSON编码错误'
             ]);
         }
-        
+
         echo $jsonResponse;
         exit;
     }
@@ -91,7 +91,7 @@ class ChatBackend {
     private function generateAIResponse($message) {
         try {
             $ch = curl_init($this->apiUrl);
-            
+
             $data = [
                 "model" => "deepseek-chat",
                 "messages" => [
@@ -113,15 +113,15 @@ class ChatBackend {
             ]);
 
             $response = curl_exec($ch);
-            
+
             if (curl_errno($ch)) {
                 error_log('Curl error: ' . curl_error($ch));
                 throw new Exception("API请求失败: " . curl_error($ch));
             }
-            
+
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
-            
+
             if ($httpCode !== 200) {
                 error_log('API returned non-200 status code: ' . $httpCode . ', Response: ' . $response);
                 throw new Exception("API返回错误状态码: " . $httpCode);
@@ -133,7 +133,7 @@ class ChatBackend {
             }
 
             error_log('API Response: ' . $response); // 记录API响应
-            
+
             $result = json_decode($response, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
                 error_log('JSON decode error: ' . json_last_error_msg());
@@ -205,4 +205,4 @@ try {
         'status' => 'error',
         'message' => '系统错误: ' . $e->getMessage()
     ]);
-} 
+}

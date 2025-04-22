@@ -9,7 +9,7 @@ class ChatBackend {
     private $config;
     private $uploadDir;
     private $cacheDir;
-    
+
     public function __construct() {
         $this->loadConfig();
         $this->setupDirectories();
@@ -38,7 +38,7 @@ class ChatBackend {
     private function setupDirectories() {
         $this->uploadDir = "uploads/" . date("Y-m-d");
         $this->cacheDir = "cache/" . date("Y-m-d");
-        
+
         foreach ([$this->uploadDir, $this->cacheDir] as $dir) {
             if (!file_exists($dir)) {
                 mkdir($dir, 0777, true);
@@ -59,7 +59,7 @@ class ChatBackend {
         if (headers_sent()) {
             $this->logMessage('Headers already sent when trying to send JSON response', 'error');
         }
-        
+
         $jsonResponse = json_encode($data, JSON_UNESCAPED_UNICODE);
         if ($jsonResponse === false) {
             $this->logMessage('JSON encode error: ' . json_last_error_msg(), 'error');
@@ -68,7 +68,7 @@ class ChatBackend {
                 'message' => 'JSON编码错误'
             ]);
         }
-        
+
         echo $jsonResponse;
         exit;
     }
@@ -85,7 +85,7 @@ class ChatBackend {
     private function callLLMApi($message, $taskId = null) {
         try {
             $ch = curl_init($this->config['api_base'] . '/chat/completions');
-            
+
             $data = [
                 "model" => $this->config['model'],
                 "messages" => [
@@ -111,14 +111,14 @@ class ChatBackend {
             $startTime = microtime(true);
             $response = curl_exec($ch);
             $endTime = microtime(true);
-            
+
             if (curl_errno($ch)) {
                 throw new Exception("API请求失败: " . curl_error($ch));
             }
-            
+
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
-            
+
             // 记录API调用信息
             $this->logMessage(sprintf(
                 "API Call - Task: %s, Duration: %.2fs, Status: %d",
@@ -253,4 +253,4 @@ try {
         'status' => 'error',
         'message' => '系统错误: ' . $e->getMessage()
     ]);
-} 
+}

@@ -2,7 +2,7 @@ import aiohttp
 import asyncio
 
 async def test_api():
-    api_key = "sk-9535e904340c486ca1cb4a9ae8fd1fc0"  # 您的API密钥
+    api_key = ""  # 您的API密钥
     api_base = "https://api.deepseek.com/v1"
     model = "deepseek-chat"
     

@@ -81,7 +81,7 @@ curl -X POST "http://localhost:8000/api/config" \
 
 ```bash
 # Make sure you're in the project directory
-cd deepchat
+cd C:\Users\bqy04\Desktop\Liverpool\group work\deepchat-main-modify
 
 # Activate the environment
 conda activate deepchat
