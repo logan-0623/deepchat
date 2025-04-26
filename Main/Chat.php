@@ -33,32 +33,32 @@ class LightPDFProcessor {
             }
             return implode("\n\n", $text);
         } catch (Exception $e) {
-            throw new Exception("PDF parsing failed: " . $e->getMessage());
+            throw new Exception("PDF解析失败: " . $e->getMessage());
         }
     }
 
     public function generateSummary() {
         $cacheFile = $this->cacheDir . "/structured_abstract.json";
 
-        // Check cache
+        // 检查缓存
         if (file_exists($cacheFile)) {
             return json_decode(file_get_contents($cacheFile), true)['abstract'];
         }
 
-        // Parse PDF
+        // 解析PDF
         $rawText = $this->parsePDF();
         if (empty($rawText)) {
-            throw new Exception("Unable to extract valid text content");
+            throw new Exception("无法提取有效文本内容");
         }
 
-        // Build prompt
-        $structuredPrompt = "Please generate a structured academic abstract based on the following research content, strictly following the format requirements:\n\n"
-            . "# Format Specification\n"
-            . "1. Use the following six-level heading structure (bold):\n"
+        // 构建提示词
+        $structuredPrompt = "请根据以下研究内容生成结构化学术摘要，严格遵循以下格式要求：\n\n"
+            . "# 格式规范\n"
+            . "1. 使用以下六级标题结构（加粗）：\n"
             . "**Abstract**\n**Introduction**\n**Related Work**\n**Methodology**\n**Experiment**\n**Conclusion**\n\n"
-            . "# Research Content Input\n" . $rawText;
+            . "# 研究内容输入\n" . $rawText;
 
-        // Call API
+        // 调用API
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL => $this->apiUrl,
@@ -79,18 +79,18 @@ class LightPDFProcessor {
 
         $response = curl_exec($ch);
         if (curl_errno($ch)) {
-            throw new Exception("API request failed: " . curl_error($ch));
+            throw new Exception("API请求失败: " . curl_error($ch));
         }
         curl_close($ch);
 
         $result = json_decode($response, true);
         if (!isset($result['choices'][0]['message']['content'])) {
-            throw new Exception("API response format error");
+            throw new Exception("API响应格式错误");
         }
 
         $abstract = $result['choices'][0]['message']['content'];
 
-        // Save cache
+        // 保存缓存
         file_put_contents($cacheFile, json_encode(["abstract" => $abstract]));
 
         return $abstract;
@@ -106,16 +106,16 @@ class LightPDFProcessor {
     }
 }
 
-// Web API usage example
+// Web API 使用示例
 header("Content-Type: application/json");
 
 try {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        throw new Exception("Only POST requests are supported");
+        throw new Exception("仅支持POST请求");
     }
 
     if (!isset($_FILES['pdf']) || $_FILES['pdf']['error'] !== UPLOAD_ERR_OK) {
-        throw new Exception("File upload failed");
+        throw new Exception("文件上传失败");
     }
 
     $tmpPath = $_FILES['pdf']['tmp_name'];

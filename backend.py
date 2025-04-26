@@ -14,34 +14,34 @@ import uuid
 import aiohttp
 import os.path
 
-# Try to import PyPDF2 library
+# 尝试导入 PyPDF2 库
 try:
     import PyPDF2
 
     HAS_PYPDF2 = True
 except ImportError:
     HAS_PYPDF2 = False
-    print("PyPDF2 library not installed, PDF processing will be unavailable")
+    print("PyPDF2 库未安装，PDF处理功能将不可用")
 
-# Constant definitions
+# 常量定义
 DEBUG = True
 RUNS_DIR = "runs"
 UPLOADS_DIR = "uploads"
 CACHE_DIR = "cache"
 CONFIG_FILE = "config.json"
 STAGES = [
-    "Initialization",
-    "File parsing",
-    "API call",
-    "Generating reply",
-    "Complete"
+    "初始化",
+    "解析文件",
+    "调用API",
+    "生成回复",
+    "完成"
 ]
 
-# Create necessary directories
+# 创建必要的目录
 for dir_path in [RUNS_DIR, UPLOADS_DIR, CACHE_DIR]:
     os.makedirs(dir_path, exist_ok=True)
 
-# Server configuration
+# 服务器配置
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -51,14 +51,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Store active connections and task progress
+# 存储活动连接和任务进度
 active_connections: Dict[str, WebSocket] = {}
 progress_store: Dict[str, Dict] = {}
 
 
 class Config:
     def __init__(self):
-        # Default configuration
+        # 默认配置
         self.api_key = ""
         self.api_base = "https://api.deepseek.com/v1"
         self.model = "deepseek-chat"
@@ -66,23 +66,23 @@ class Config:
         self.max_tokens = 1000
         self.upload_max_size = 10 * 1024 * 1024  # 10MB
 
-        # First try to load from environment variables
+        # 先尝试从环境变量加载
         self._load_from_env()
 
-        # Then try to load from config file
+        # 然后尝试从配置文件加载
         self._load_from_file()
 
-        # If API key is still empty, print warning
+        # 如果API密钥仍然为空，打印警告
         if not self.api_key:
-            print("Warning: API key not set! Please set DEEPCHAT_API_KEY environment variable or configure api_key in config.json")
+            print("警告: API密钥未设置! 请设置环境变量DEEPCHAT_API_KEY或在config.json中配置api_key")
 
     def _load_from_env(self):
-        """Load configuration from environment variables"""
+        """从环境变量加载配置"""
         self.api_key = os.environ.get("DEEPCHAT_API_KEY", self.api_key)
         self.api_base = os.environ.get("DEEPCHAT_API_BASE", self.api_base)
         self.model = os.environ.get("DEEPCHAT_MODEL", self.model)
 
-        # Try to load numeric configurations
+        # 尝试加载数值型配置
         try:
             if "DEEPCHAT_TEMPERATURE" in os.environ:
                 self.temperature = float(os.environ["DEEPCHAT_TEMPERATURE"])
@@ -91,12 +91,12 @@ class Config:
             if "DEEPCHAT_UPLOAD_MAX_SIZE" in os.environ:
                 self.upload_max_size = int(os.environ["DEEPCHAT_UPLOAD_MAX_SIZE"])
         except (ValueError, TypeError) as e:
-            print(f"Environment variable configuration error: {e}")
+            print(f"环境变量配置错误: {e}")
 
     def _load_from_file(self):
-        """Load configuration from config file"""
+        """从配置文件加载配置"""
         if not os.path.exists(CONFIG_FILE):
-            # If file doesn't exist, create default config file
+            # 如果文件不存在，创建默认配置文件
             self._save_to_file()
             return
 
@@ -104,7 +104,7 @@ class Config:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                 config_data = json.load(f)
 
-            # Update configuration
+            # 更新配置
             if "api_key" in config_data and config_data["api_key"]:
                 self.api_key = config_data["api_key"]
             if "api_base" in config_data:
@@ -119,11 +119,11 @@ class Config:
                 self.upload_max_size = int(config_data["upload_max_size"])
 
         except Exception as e:
-            print(f"Error loading config file: {e}")
+            print(f"加载配置文件时出错: {e}")
             traceback.print_exc()
 
     def _save_to_file(self):
-        """Save current configuration to file"""
+        """保存当前配置到文件"""
         config_data = {
             "api_key": self.api_key,
             "api_base": self.api_base,
@@ -136,14 +136,14 @@ class Config:
         try:
             with open(CONFIG_FILE, "w", encoding="utf-8") as f:
                 json.dump(config_data, f, indent=4, ensure_ascii=False)
-            print(f"Configuration saved to {CONFIG_FILE}")
+            print(f"配置已保存到 {CONFIG_FILE}")
         except Exception as e:
-            print(f"Error saving config file: {e}")
+            print(f"保存配置文件时出错: {e}")
             traceback.print_exc()
 
     def update_config(self, new_config):
-        """Update configuration and save to file"""
-        # Update configuration
+        """更新配置并保存到文件"""
+        # 更新配置
         if "api_key" in new_config and new_config["api_key"]:
             self.api_key = new_config["api_key"]
         if "api_base" in new_config:
@@ -157,9 +157,9 @@ class Config:
         if "upload_max_size" in new_config:
             self.upload_max_size = int(new_config["upload_max_size"])
 
-        # Save to file
+        # 保存到文件
         self._save_to_file()
-        return {"status": "success", "message": "Configuration updated"}
+        return {"status": "success", "message": "配置已更新"}
 
 
 config = Config()
@@ -176,72 +176,72 @@ class ProgressManager:
 
     async def report_progress(self):
         if self.task_id not in active_connections:
-            print(f"Cannot report progress - task {self.task_id} has no active WebSocket connection")
-            print(f"Task {self.task_id} will continue processing in background")
+            print(f"无法报告进度 - 任务 {self.task_id} 没有活动的WebSocket连接")
+            print(f"任务 {self.task_id} 将继续在后台处理")
             return
 
         try:
             self.current_stage += 1
             progress = int((self.current_stage / self.total_stages) * 100)
-            stage_name = self.stages[self.current_stage - 1] if self.current_stage <= len(self.stages) else "Complete"
+            stage_name = self.stages[self.current_stage - 1] if self.current_stage <= len(self.stages) else "完成"
 
             message = {
                 "progress": progress,
-                "status": f"Stage: {stage_name}",
+                "status": f"阶段: {stage_name}",
             }
 
-            # Ensure WebSocket connection is still valid
+            # 确保WebSocket连接仍然有效
             if active_connections[self.task_id].client_state == WebSocketState.CONNECTED:
-                print(f"Sending progress update: task {self.task_id}, progress {progress}%, stage {stage_name}")
+                print(f"发送进度更新: 任务 {self.task_id}, 进度 {progress}%, 阶段 {stage_name}")
                 await active_connections[self.task_id].send_json(message)
             else:
-                print(f"Cannot send progress - WebSocket connection for task {self.task_id} is closed")
-                print(f"Task {self.task_id} will continue processing in background")
-                # Remove invalid connection
+                print(f"无法发送进度 - 任务 {self.task_id} 的WebSocket连接已关闭")
+                print(f"任务 {self.task_id} 将继续在后台处理")
+                # 移除无效的连接
                 if self.task_id in active_connections:
                     active_connections.pop(self.task_id)
-                    print(f"Removed invalid WebSocket connection: {self.task_id}")
+                    print(f"移除无效的WebSocket连接: {self.task_id}")
         except Exception as e:
-            print(f"Error reporting progress: {str(e)}")
-            print(f"Task {self.task_id} will continue processing in background")
+            print(f"报告进度时出错: {str(e)}")
+            print(f"任务 {self.task_id} 将继续在后台处理")
             traceback.print_exc()
 
     async def fail_stage(self, error_message: str):
         if self.task_id not in active_connections:
-            print(f"Cannot report failure - task {self.task_id} has no active WebSocket connection")
+            print(f"无法报告失败 - 任务 {self.task_id} 没有活动的WebSocket连接")
             return
 
         try:
-            error_msg = f"{self.stages[self.current_stage]} error: {error_message}"
+            error_msg = f"{self.stages[self.current_stage]} 错误: {error_message}"
 
-            # Ensure WebSocket connection is still valid
+            # 确保WebSocket连接仍然有效
             if active_connections[self.task_id].client_state == WebSocketState.CONNECTED:
                 await active_connections[self.task_id].send_json({
                     "progress": 100,
-                    "status": "Failed",
+                    "status": "失败",
                     "error": error_msg
                 })
                 self.failed = True
-                print(f"Task {self.task_id}: {error_msg}")
+                print(f"任务 {self.task_id}: {error_msg}")
             else:
-                print(f"Cannot send failure notification - WebSocket connection for task {self.task_id} is closed")
+                print(f"无法发送失败通知 - 任务 {self.task_id} 的WebSocket连接已关闭")
         except Exception as e:
-            print(f"Error reporting failure: {str(e)}")
+            print(f"报告失败时出错: {str(e)}")
             traceback.print_exc()
 
 
 async def send_progress(websocket: Optional[WebSocket], status: str, progress: int):
-    """Send progress update"""
+    """发送进度更新"""
     if websocket is None:
-        print(f"Cannot send progress - websocket is None, status: {status}, progress: {progress}")
+        print(f"无法发送进度 - websocket为空, status: {status}, progress: {progress}")
         return
 
     try:
         message = {"progress": progress, "status": status}
         await websocket.send_json(message)
-        print(f"Progress sent: {progress}%, {status}")
+        print(f"进度已发送: {progress}%, {status}")
     except Exception as e:
-        print(f"Error sending progress: {str(e)}")
+        print(f"发送进度时出错: {str(e)}")
         traceback.print_exc()
 
 
@@ -285,98 +285,98 @@ async def call_llm_api(message: str, task_id: str = None) -> dict:
 
 
 async def process_file(filepath: str, filename: str, content_type: str, task_id: str) -> dict:
-    """Process uploaded file"""
+    """处理上传的文件"""
     if not filepath or not os.path.exists(filepath):
-        raise HTTPException(status_code=400, detail="File does not exist")
+        raise HTTPException(status_code=400, detail="文件不存在")
 
-    # Read file content
+    # 读取文件内容
     with open(filepath, "rb") as f:
         content = f.read()
 
-    # If it's a PDF file, process PDF
+    # 如果是PDF文件，处理PDF
     if content_type == "application/pdf":
         try:
-            # Try to import PDF processing module
+            # 尝试导入PDF处理模块
             pdf_module_available = False
 
             try:
                 from Main.runtxt import LightPDFProcessor
                 pdf_module_available = True
-                print("Found PDF processing module, will use LightPDFProcessor")
+                print("找到PDF处理模块，将使用LightPDFProcessor")
             except ImportError:
                 try:
                     from runtxt import LightPDFProcessor
                     pdf_module_available = True
-                    print("Found PDF processing module, will use LightPDFProcessor")
+                    print("找到PDF处理模块，将使用LightPDFProcessor")
                 except ImportError:
-                    print("PDF processing module not available, will process PDF as plain text")
+                    print("PDF处理模块不可用，将PDF作为普通文本处理")
 
             if pdf_module_available:
-                # Use LightPDFProcessor to process PDF
-                print(f"Starting PDF processing: {filepath}")
-                print(f"File absolute path: {os.path.abspath(filepath)}")
-                print(f"File size: {os.path.getsize(filepath)} bytes")
+                # 使用LightPDFProcessor处理PDF
+                print(f"开始处理PDF: {filepath}")
+                print(f"文件绝对路径: {os.path.abspath(filepath)}")
+                print(f"文件大小: {os.path.getsize(filepath)} 字节")
 
                 try:
-                    # Pass task_id to ensure each upload is processed uniquely
+                    # 传递task_id来确保每次上传都是唯一的处理
                     processor = LightPDFProcessor(filepath, task_id=task_id)
-                    print("LightPDFProcessor instantiated successfully")
+                    print("LightPDFProcessor 实例化成功")
                 except Exception as e:
-                    print(f"Failed to instantiate LightPDFProcessor: {str(e)}")
+                    print(f"实例化 LightPDFProcessor 失败: {str(e)}")
                     traceback.print_exc()
                     return {
                         "status": "warning",
                         "type": "pdf_error",
                         "task_id": task_id,
                         "file_name": os.path.basename(filepath),
-                        "content": f"PDF processing initialization failed: {str(e)}"
+                        "content": f"PDF处理初始化失败: {str(e)}"
                     }
 
-                # Check if WebSocket connection exists
+                # 检查WebSocket连接是否存在
                 if task_id in active_connections:
-                    # Send processing start notification
+                    # 发送处理开始的通知
                     try:
                         await active_connections[task_id].send_json({
-                            "status": "Processing",
+                            "status": "进行中",
                             "progress": 30,
-                            "message": "Parsing PDF file, please wait..."
+                            "message": "正在解析PDF文件，请耐心等待..."
                         })
-                        print("Sent PDF processing start notification")
+                        print("已发送PDF处理开始通知")
                     except Exception as e:
-                        print(f"Failed to send PDF processing start notification: {str(e)}")
+                        print(f"发送PDF处理开始通知失败: {str(e)}")
 
-                # Asynchronously generate summary
+                # 异步生成摘要
                 try:
-                    print("Starting asynchronous PDF summary generation")
-                    # Set longer timeout, PDF processing needs more time
+                    print("开始异步生成PDF摘要")
+                    # 设置较长的超时时间，PDF处理需要更多时间
                     summary = await asyncio.wait_for(
                         processor.generate_summary(),
-                        timeout=300  # Set 5 minute timeout, much longer than default
+                        timeout=300  # 设置5分钟超时，比默认的要长得多
                     )
-                    print("PDF summary generation call completed")
+                    print("PDF摘要生成调用已完成")
 
-                    # Check if summary is None or not a string
+                    # 检查summary是否为None或非字符串
                     if summary is None:
-                        print(f"Warning: PDF processing result is None")
-                        summary = "PDF processing failed, unable to generate summary. Please ensure the PDF file is valid and readable."
+                        print(f"警告: PDF处理结果为None")
+                        summary = "PDF处理失败，无法生成摘要。请确保PDF文件有效并且可读取。"
                     elif not isinstance(summary, str):
-                        print(f"Warning: PDF processing result is not string type, but {type(summary)}")
-                        # Try to convert to string
+                        print(f"警告: PDF处理结果不是字符串类型，而是 {type(summary)}")
+                        # 尝试转换为字符串
                         try:
                             summary = str(summary)
-                            print(f"Converted result to string, length: {len(summary)}")
+                            print(f"已将结果转换为字符串，长度: {len(summary)}")
                         except Exception as e:
-                            print(f"Failed to convert result to string: {str(e)}")
-                            summary = "PDF processing result format is abnormal, cannot be displayed."
+                            print(f"转换结果为字符串失败: {str(e)}")
+                            summary = "PDF处理结果格式异常，无法显示。"
 
-                    # Ensure summary is string before using len()
+                    # 确保summary是字符串后再使用len()
                     summary_length = len(summary) if isinstance(summary, str) else 0
-                    print(f"PDF summary generation completed, length: {summary_length} characters")
+                    print(f"PDF摘要生成完成，长度: {summary_length} 字符")
 
-                    # Check if summary is empty
-                    if summary_length < 10:  # Set a reasonable minimum length threshold
-                        print(f"Warning: Generated summary is empty or too short ({summary_length} characters)")
-                        summary = "Processing result is empty. PDF may not contain enough text content, or format is not supported."
+                    # 检查摘要是否为空
+                    if summary_length < 10:  # 设置一个合理的最小长度阈值
+                        print(f"警告: 生成的摘要为空或过短 ({summary_length} 字符)")
+                        summary = "处理结果为空。PDF可能没有包含足够的文本内容，或者格式不受支持。"
 
                     result = {
                         "status": "success",
@@ -386,108 +386,109 @@ async def process_file(filepath: str, filename: str, content_type: str, task_id:
                         "content": summary
                     }
 
-                    # Save a copy of the result to task directory before returning
+                    # 在返回结果前保存一份结果到任务目录
                     task_dir = os.path.join(RUNS_DIR, task_id)
                     os.makedirs(task_dir, exist_ok=True)
                     with open(os.path.join(task_dir, "pdf_result.json"), "w", encoding="utf-8") as f:
                         json.dump(result, f, ensure_ascii=False)
-                    print(f"Saved PDF processing result to: {os.path.join(task_dir, 'pdf_result.json')}")
+                    print(f"已保存PDF处理结果到: {os.path.join(task_dir, 'pdf_result.json')}")
 
-                    # If WebSocket connection exists, send processing success notification
+                    # 如果WebSocket连接存在，发送处理成功的通知
                     if task_id in active_connections:
                         try:
-                            # Add a small delay to ensure connection stability
+                            # 添加一个小延迟确保连接稳定
                             await asyncio.sleep(0.5)
 
-                            # Verify connection state
+                            # 验证连接状态
                             if active_connections[task_id].client_state == WebSocketState.CONNECTED:
-                                print(f"Sending PDF processing result via WebSocket, length: {summary_length} characters")
+                                print(f"通过WebSocket发送PDF处理结果，长度: {summary_length} 字符")
 
-                                # First send a preparation message
+                                # 先发送一个准备消息
                                 await active_connections[task_id].send_json({
-                                    "status": "Ready",
+                                    "status": "准备完成",
                                     "progress": 95,
-                                    "message": "PDF processing completed, preparing to display results..."
+                                    "message": "PDF处理已完成，正在准备显示结果..."
                                 })
 
-                                # Wait a short time
+                                # 再等待一小段时间
                                 await asyncio.sleep(0.5)
 
-                                # Send final result
+                                # 发送最终结果
                                 await active_connections[task_id].send_json({
-                                    "status": "Complete",
+                                    "status": "完成",
                                     "progress": 100,
                                     "type": "pdf",
                                     "file_name": os.path.basename(filepath),
                                     "content": summary
                                 })
-                                print(f"PDF processing result sent via WebSocket")
+                                print(f"PDF处理结果已通过WebSocket发送")
 
-                                # Record after successful sending
+                                # 发送成功后记录
                                 with open(os.path.join(task_dir, "websocket_sent.txt"), "w") as f:
-                                    f.write("Send time: " + datetime.now().isoformat())
+                                    f.write("发送时间: " + datetime.now().isoformat())
                             else:
-                                print(f"WebSocket connection state abnormal: {active_connections[task_id].client_state}, trying to provide result via API")
-                                # Save a marker in task directory to make API interface discover the generated result
+                                print(
+                                    f"WebSocket连接状态异常: {active_connections[task_id].client_state}，尝试通过API提供结果")
+                                # 通过在任务目录保存标记，使API接口能发现已生成的结果
                                 with open(os.path.join(task_dir, "result_ready.txt"), "w") as f:
                                     f.write("1")
                         except Exception as ws_error:
-                            print(f"Failed to send result via WebSocket: {str(ws_error)}")
+                            print(f"通过WebSocket发送结果失败: {str(ws_error)}")
                             traceback.print_exc()
                     else:
-                        print(f"Cannot find WebSocket connection for task {task_id}, result will be provided via API interface")
+                        print(f"找不到任务 {task_id} 的WebSocket连接，结果将通过API接口提供")
 
                     return result
                 except asyncio.TimeoutError as e:
-                    # If generation times out, return friendly error message
-                    print(f"PDF processing timeout: {filepath}, error: {str(e)}")
+                    # 如果生成超时，返回友好的错误信息
+                    print(f"PDF处理超时: {filepath}, 错误: {str(e)}")
                     traceback.print_exc()
                     return {
                         "status": "warning",
                         "type": "pdf_timeout",
                         "task_id": task_id,
                         "file_name": os.path.basename(filepath),
-                        "content": "PDF processing takes longer time, system continues processing in background. Please try again later or upload a smaller file."
+                        "content": "PDF处理时间较长，系统继续在后台处理。请稍后再试或上传较小的文件。"
                     }
                 except Exception as e:
-                    print(f"Error during PDF summary generation: {str(e)}")
+                    print(f"PDF摘要生成过程中出错: {str(e)}")
                     traceback.print_exc()
                     return {
                         "status": "warning",
                         "type": "pdf_error",
                         "task_id": task_id,
                         "file_name": os.path.basename(filepath),
-                        "content": f"PDF processing failed: {str(e)}"
+                        "content": f"PDF处理失败: {str(e)}"
                     }
 
             else:
-                # If no special PDF processor, use basic PyPDF2 to extract text
+                # 如果没有特殊的PDF处理器，使用基本的PyPDF2提取文本
                 if HAS_PYPDF2:
                     text = ""
                     with open(filepath, 'rb') as f:
-                        # Send processing status
+                        # 发送处理状态
                         if task_id in active_connections:
                             await active_connections[task_id].send_json({
-                                "status": "Processing",
+                                "status": "进行中",
                                 "progress": 30,
-                                "message": "Parsing PDF file, please wait..."
+                                "message": "正在解析PDF文件，请耐心等待..."
                             })
 
                         reader = PyPDF2.PdfReader(f)
                         total_pages = len(reader.pages)
 
                         for page_num in range(total_pages):
-                            # Update progress every 10% of pages
+                            # 每处理10%的页面更新一次进度
                             if task_id in active_connections and page_num % max(1, total_pages // 10) == 0:
                                 progress = min(30 + int(60 * page_num / total_pages), 90)
                                 await active_connections[task_id].send_json({
-                                    "status": "Processing",
+                                    "status": "进行中",
                                     "progress": progress,
-                                    "message": f"Processing PDF page {page_num + 1}/{total_pages}..."
+                                    "message": f"正在处理PDF第 {page_num + 1}/{total_pages} 页..."
                                 })
 
                             page = reader.pages[page_num]
-                            text += f"\n--- Page {page_num + 1} ---\n"
+                            text += f"\n--- 第 {page_num + 1} 页 ---\n"
                             text += page.extract_text()
 
                     return {
@@ -503,26 +504,26 @@ async def process_file(filepath: str, filename: str, content_type: str, task_id:
                         "type": "pdf_unsupported",
                         "task_id": task_id,
                         "file_name": os.path.basename(filepath),
-                        "content": "PDF file uploaded, but system does not have PDF processing library installed. Please install PyPDF2 to enable PDF processing."
+                        "content": "PDF文件已上传，但系统未安装PDF处理库。请安装PyPDF2以启用PDF处理功能。"
                     }
         except Exception as e:
-            print(f"PDF processing failed: {str(e)}")
+            print(f"PDF处理失败: {str(e)}")
             traceback.print_exc()
-            # Return error message instead of throwing exception
+            # 返回错误信息而不是抛出异常
             return {
-                "status": "warning",  # Changed to warning instead of error, show friendlier message
+                "status": "warning",  # 改为warning而不是error，显示更友好的消息
                 "type": "pdf_error",
                 "task_id": task_id,
                 "file_name": os.path.basename(filepath),
-                "content": f"PDF processing takes longer time, system will continue processing in background. You can check the result later, or try uploading a PDF with less content."
+                "content": f"PDF处理需要较长时间，系统将在后台继续处理。您可以稍后再查询结果，或者尝试上传内容较少的PDF文件。"
             }
 
-    # If it's a text file, read content directly
+    # 如果是文本文件，直接读取内容
     if content_type == "text/plain":
         try:
             text_content = content.decode("utf-8")
         except UnicodeDecodeError:
-            # Try other encodings
+            # 尝试其他编码
             try:
                 text_content = content.decode("gbk")
             except:
@@ -536,35 +537,35 @@ async def process_file(filepath: str, filename: str, content_type: str, task_id:
             "content": text_content
         }
 
-    raise HTTPException(status_code=400, detail="Unsupported file type")
+    raise HTTPException(status_code=400, detail="不支持的文件类型")
 
 
 @app.websocket("/ws/{task_id}")
 async def websocket_endpoint(websocket: WebSocket, task_id: str):
     try:
-        print(f"Received WebSocket connection request: {task_id}")
+        print(f"接收到WebSocket连接请求: {task_id}")
 
-        # Accept connection
+        # 接受连接
         await websocket.accept()
-        print(f"WebSocket connection accepted: {task_id}")
+        print(f"WebSocket连接已接受: {task_id}")
 
-        # Store connection - use global dictionary to save connection
+        # 存储连接 - 使用全局字典保存连接
         active_connections[task_id] = websocket
-        print(f"Saved WebSocket connection: {task_id}, current connections: {len(active_connections)}")
+        print(f"已保存WebSocket连接: {task_id}, 当前连接数: {len(active_connections)}")
 
-        # Send initial status
+        # 发送初始状态
         try:
             await websocket.send_json({
                 "type": "connection_status",
                 "status": "connected",
                 "task_id": task_id,
-                "message": "WebSocket connection successful"
+                "message": "WebSocket连接成功"
             })
-            print(f"Sent connection success message: {task_id}")
+            print(f"已发送连接成功消息: {task_id}")
         except Exception as e:
-            print(f"Failed to send initial status: {task_id}, error: {str(e)}")
+            print(f"发送初始状态失败: {task_id}, 错误: {str(e)}")
 
-        # If task already exists, send current status
+        # 如果任务已存在，发送当前状态
         if task_id in progress_store:
             task_type = progress_store[task_id].get("type", "unknown")
             try:
@@ -572,65 +573,65 @@ async def websocket_endpoint(websocket: WebSocket, task_id: str):
                     "type": "task_info",
                     "task_id": task_id,
                     "task_type": task_type,
-                    "message": f"Task {task_id} status: Processing"
+                    "message": f"任务 {task_id} 状态: 处理中"
                 })
-                print(f"Sent task information: {task_id}, type: {task_type}")
+                print(f"已发送任务信息: {task_id}, 类型: {task_type}")
             except Exception as e:
-                print(f"Failed to send task information: {task_id}, error: {str(e)}")
+                print(f"发送任务信息失败: {task_id}, 错误: {str(e)}")
 
-        # Keep connection until client disconnects
+        # 保持连接直到客户端断开
         try:
             while True:
                 data = await websocket.receive_json()
-                print(f"Received WebSocket message: {task_id}, data: {data}")
+                print(f"收到WebSocket消息: {task_id}, 数据: {data}")
 
-                # Handle ping message
+                # 处理ping消息
                 if data.get("type") == "ping":
                     await websocket.send_json({"type": "pong"})
-                    print(f"Replied to ping: {task_id}")
+                    print(f"回复ping: {task_id}")
                     continue
 
-                # Handle stop thinking request
+                # 处理停止思考请求
                 if data.get("type") == "stop_thinking":
-                    print(f"Received stop thinking request: {task_id}")
-                    # Set flag to tell task processing function to stop processing
+                    print(f"收到停止思考请求: {task_id}")
+                    # 设置标志，告知任务处理函数停止处理
                     if task_id in progress_store:
                         progress_store[task_id]["stopped"] = True
-                        # Add flag indicating this is a user-initiated stop request, not WebSocket disconnection
+                        # 添加标志表明这是用户主动发起的停止请求，而不是WebSocket断开
                         progress_store[task_id]["user_stopped"] = True
                     await websocket.send_json({
                         "type": "stop_thinking_response",
                         "status": "success",
-                        "message": "Thinking stopped"
+                        "message": "已停止思考"
                     })
                     break
 
         except json.JSONDecodeError:
-            # Handle non-JSON messages
+            # 处理非JSON消息
             try:
                 text_data = await websocket.receive_text()
-                print(f"Received non-JSON text message: {task_id}, data: {text_data}")
+                print(f"收到非JSON文本消息: {task_id}, 数据: {text_data}")
             except Exception as e:
-                print(f"Error receiving text message: {str(e)}")
+                print(f"接收文本消息时出错: {str(e)}")
 
         except WebSocketDisconnect:
-            print(f"WebSocket connection disconnected: {task_id}")
-            # Important modification: Do not stop task processing when connection disconnects
-            # Only record disconnection event, but do not mark task as stopped
-            print(f"WebSocket connection disconnected, but task {task_id} will continue processing")
-            # Delete connection from active_connections
+            print(f"WebSocket连接断开: {task_id}")
+            # 重要修改：不要在连接断开时停止任务处理
+            # 只记录连接断开事件，但不标记任务为停止
+            print(f"WebSocket连接已断开，但任务 {task_id} 将继续处理")
+            # 删除 active_connections 中的连接
             if task_id in active_connections:
                 active_connections.pop(task_id)
-                print(f"Removed connection {task_id} from active_connections")
+                print(f"已从active_connections中移除连接 {task_id}")
 
         except Exception as e:
-            print(f"WebSocket connection error: {task_id}, error: {str(e)}")
+            print(f"WebSocket连接异常: {task_id}, 错误: {str(e)}")
     except Exception as e:
-        print(f"Error handling WebSocket connection: {task_id}, error: {str(e)}")
+        print(f"处理WebSocket连接时出错: {task_id}, 错误: {str(e)}")
         traceback.print_exc()
     finally:
-        # Note: Do not remove connection here, let it remain until task completion
-        print(f"WebSocket connection handling completed: {task_id}")
+        # 注意：不要在这里移除连接，让它保持到任务完成
+        print(f"WebSocket连接处理完成: {task_id}")
 
 
 @app.post("/api/chat")
@@ -638,76 +639,79 @@ async def chat(request: Request):
     data = await request.json()
     message = data.get("message")
     if not message:
-        raise HTTPException(status_code=400, detail="Message cannot be empty")
+        raise HTTPException(status_code=400, detail="消息不能为空")
 
-    # Use task_id from frontend if provided, otherwise generate new one
+    # 使用前端提供的task_id，如果没有提供才生成新的
     task_id = data.get("task_id") or str(uuid.uuid4())
 
     progress_store[task_id] = {"type": "chat", "message": message, "stopped": False}
 
-    # Process chat message asynchronously
+    # 异步处理聊天消息
     asyncio.create_task(process_chat(task_id, message))
 
     return {"task_id": task_id}
 
 
 async def process_chat(task_id: str, message: str):
-    print(f"Starting to process task {task_id}, waiting for WebSocket connection...")
+    print(f"开始处理任务 {task_id}, 等待WebSocket连接...")
 
-    # Initialize task status
+    # 初始化任务状态
     progress_store[task_id] = {"type": "chat", "message": message, "stopped": False}
 
-    # Wait for WebSocket connection
-    connection_timeout = 10  # 10 seconds timeout
-    for _ in range(connection_timeout * 10):  # Wait longer (10 seconds)
+    # 等待WebSocket连接
+    connection_timeout = 10  # 10秒超时
+    for _ in range(connection_timeout * 10):  # 等待更长时间 (10秒)
         if task_id in active_connections:
-            print(f"Found WebSocket connection for task {task_id}")
+            print(f"找到任务 {task_id} 的WebSocket连接")
             break
         await asyncio.sleep(0.1)
 
-        # Check if task has been stopped by user
-        # Note: WebSocket disconnection should not stop task processing
+        # 检查任务是否被用户主动停止
+        # 注意：WebSocket断开连接不应该停止任务处理
         if progress_store.get(task_id, {}).get("stopped", False):
-            print(f"Task {task_id} was stopped by user while waiting for WebSocket connection")
+            print(f"任务 {task_id} 在等待WebSocket连接时已被用户主动停止")
             return
 
-    # Continue processing even if no WebSocket connection found
+    # 即使没有找到WebSocket连接，仍然继续处理
     if task_id not in active_connections:
-        print(f"Warning: Task {task_id} has no active WebSocket connection, but will continue processing")
+        print(f"警告: 任务 {task_id} 没有活动的WebSocket连接，但任务将继续处理")
 
-    print(f"Starting to process chat task: {task_id}")
+    print(f"开始处理聊天任务: {task_id}")
     progress = ProgressManager(task_id, STAGES)
 
     try:
-        # Initialization
+        # 初始化
         await progress.report_progress()
-        print(f"Task {task_id}: Initialization complete")
+        print(f"任务 {task_id}: 初始化完成")
 
-        # Check if task has been stopped by user (not connection disconnect)
-        if progress_store.get(task_id, {}).get("stopped", False) and progress_store.get(task_id, {}).get("user_stopped", False):
-            print(f"Task {task_id} was stopped by user after initialization")
+        # 检查任务是否被用户主动停止（而不是连接断开）
+        if progress_store.get(task_id, {}).get("stopped", False) and progress_store.get(task_id, {}).get("user_stopped",
+                                                                                                         False):
+            print(f"任务 {task_id} 在初始化后被用户主动停止")
             return
 
-        # Simulate parsing
+        # 模拟解析
         await asyncio.sleep(0.5)
         await progress.report_progress()
-        print(f"Task {task_id}: Parsing complete")
+        print(f"任务 {task_id}: 解析完成")
 
-        # Check if task has been stopped by user (not connection disconnect)
-        if progress_store.get(task_id, {}).get("stopped", False) and progress_store.get(task_id, {}).get("user_stopped", False):
-            print(f"Task {task_id} was stopped by user after parsing")
+        # 检查任务是否被用户主动停止（而不是连接断开）
+        if progress_store.get(task_id, {}).get("stopped", False) and progress_store.get(task_id, {}).get("user_stopped",
+                                                                                                         False):
+            print(f"任务 {task_id} 在解析后被用户主动停止")
             return
 
-        # Call API
+        # 调用API
         await progress.report_progress()
-        print(f"Task {task_id}: Starting API call")
+        print(f"任务 {task_id}: 开始调用API")
 
-        # Check if task has been stopped by user (not connection disconnect)
-        if progress_store.get(task_id, {}).get("stopped", False) and progress_store.get(task_id, {}).get("user_stopped", False):
-            print(f"Task {task_id} was stopped by user before API call")
+        # 检查任务是否被用户主动停止（而不是连接断开）
+        if progress_store.get(task_id, {}).get("stopped", False) and progress_store.get(task_id, {}).get("user_stopped",
+                                                                                                         False):
+            print(f"任务 {task_id} 在API调用前被用户主动停止")
             return
 
-        # Call API directly instead of through function
+        # 直接调用API而不是通过函数
         try:
             headers = {
                 "Content-Type": "application/json",
@@ -720,109 +724,112 @@ async def process_chat(task_id: str, message: str):
                 "max_tokens": config.max_tokens
             }
 
-            print(f"Task {task_id}: Sending API request to {config.api_base}/chat/completions")
+            print(f"任务 {task_id}: 发送API请求到 {config.api_base}/chat/completions")
             async with aiohttp.ClientSession() as session:
                 async with session.post(
                         f"{config.api_base}/chat/completions",
                         headers=headers,
                         json=data
                 ) as response:
-                    print(f"Task {task_id}: Received API response, status code: {response.status}")
+                    print(f"任务 {task_id}: 收到API响应, 状态码: {response.status}")
 
-                    # Check if task has been stopped by user (not connection disconnect)
-                    if progress_store.get(task_id, {}).get("stopped", False) and progress_store.get(task_id, {}).get("user_stopped", False):
-                        print(f"Task {task_id} was stopped by user after receiving API response")
+                    # 检查任务是否被用户主动停止（而不是连接断开）
+                    if progress_store.get(task_id, {}).get("stopped", False) and progress_store.get(task_id, {}).get(
+                            "user_stopped", False):
+                        print(f"任务 {task_id} 在收到API响应后被用户主动停止")
                         return
 
                     if response.status != 200:
                         error_text = await response.text()
-                        print(f"Task {task_id}: API error: {error_text}")
-                        raise Exception(f"API error: {response.status}, {error_text}")
+                        print(f"任务 {task_id}: API错误: {error_text}")
+                        raise Exception(f"API错误: {response.status}, {error_text}")
 
                     result = await response.json()
                     if "choices" not in result or not result["choices"]:
-                        raise Exception("API response format error: no choices field")
+                        raise Exception("API响应格式错误: 没有choices字段")
 
                     reply = result["choices"][0]["message"]["content"]
-                    print(f"Task {task_id}: API reply length: {len(reply)} characters")
+                    print(f"任务 {task_id}: API回复长度: {len(reply)} 字符")
 
-                    # Store result as dictionary
+                    # 将结果保存为字典
                     result = {
                         "status": "success",
                         "reply": reply,
                         "task_id": task_id
                     }
         except Exception as api_error:
-            print(f"Task {task_id}: API call failed: {str(api_error)}")
+            print(f"任务 {task_id}: API调用失败: {str(api_error)}")
             traceback.print_exc()
             raise api_error
 
-        print(f"Task {task_id}: API call complete")
+        print(f"任务 {task_id}: API调用完成")
 
-        # Check if task has been stopped by user (not connection disconnect)
-        if progress_store.get(task_id, {}).get("stopped", False) and progress_store.get(task_id, {}).get("user_stopped", False):
-            print(f"Task {task_id} was stopped by user after API call completion")
+        # 检查任务是否被用户主动停止（而不是连接断开）
+        if progress_store.get(task_id, {}).get("stopped", False) and progress_store.get(task_id, {}).get("user_stopped",
+                                                                                                         False):
+            print(f"任务 {task_id} 在API调用完成后被用户主动停止")
             return
 
-        # Generate reply
+        # 生成回复
         await asyncio.sleep(0.5)
         await progress.report_progress()
-        print(f"Task {task_id}: Reply generation complete")
+        print(f"任务 {task_id}: 生成回复完成")
 
-        # Check if task has been stopped by user (not connection disconnect)
-        if progress_store.get(task_id, {}).get("stopped", False) and progress_store.get(task_id, {}).get("user_stopped", False):
-            print(f"Task {task_id} was stopped by user after reply generation")
+        # 检查任务是否被用户主动停止（而不是连接断开）
+        if progress_store.get(task_id, {}).get("stopped", False) and progress_store.get(task_id, {}).get("user_stopped",
+                                                                                                         False):
+            print(f"任务 {task_id} 在生成回复后被用户主动停止")
             return
 
-        # Check WebSocket connection again
+        # 再次检查WebSocket连接是否仍然有效
         if task_id in active_connections:
             try:
-                print(f"Task {task_id}: Sending final reply")
+                print(f"任务 {task_id}: 发送最终回复")
                 final_message = {
                     "progress": 100,
-                    "status": "Complete",
+                    "status": "完成",
                     "reply": result["reply"]
                 }
 
-                # Ensure WebSocket is still in open state
+                # 确保WebSocket仍然处于开启状态
                 if active_connections[task_id].client_state == WebSocketState.CONNECTED:
                     await active_connections[task_id].send_json(final_message)
-                    print(f"Task {task_id}: Final reply sent: {len(result['reply'])} characters")
+                    print(f"任务 {task_id}: 最终回复已发送: {len(result['reply'])}字符")
                 else:
-                    print(f"Task {task_id}: WebSocket closed, cannot send reply")
+                    print(f"任务 {task_id}: WebSocket已关闭，无法发送回复")
 
-                # Keep connection for a while after message sent
+                # 确保消息发送后保持连接一段时间
                 await asyncio.sleep(1)
             except Exception as e:
-                print(f"Error sending final reply: {task_id}, error: {str(e)}")
+                print(f"发送最终回复时出错: {task_id}, 错误: {str(e)}")
                 traceback.print_exc()
         else:
-            print(f"Task {task_id}: WebSocket connection lost, cannot send reply")
+            print(f"任务 {task_id}: WebSocket连接已丢失，无法发送回复")
 
-        # Save result to file
+        # 保存结果到文件
         task_dir = os.path.join(RUNS_DIR, task_id)
         os.makedirs(task_dir, exist_ok=True)
         with open(os.path.join(task_dir, "result.json"), "w") as f:
             json.dump(result, f, ensure_ascii=False)
 
-        # Complete
+        # 完成
         await progress.report_progress()
-        print(f"Task {task_id}: All complete")
+        print(f"任务 {task_id}: 全部完成")
 
-        # After task completion, remove connection and task from dictionaries
+        # 任务完成后，将连接和任务从字典中删除
         if task_id in active_connections:
             active_connections.pop(task_id, None)
-            print(f"Task {task_id}: Cleaned up WebSocket connection")
+            print(f"任务 {task_id}: 已清理WebSocket连接")
 
     except Exception as e:
-        print(f"Task {task_id} processing failed: {str(e)}")
+        print(f"任务 {task_id} 处理失败: {str(e)}")
         await progress.fail_stage(str(e))
         traceback.print_exc()
 
-        # Ensure connection is cleaned up on error
+        # 出错时，确保连接被清理
         if task_id in active_connections:
             active_connections.pop(task_id, None)
-            print(f"Task {task_id}: Cleaned up WebSocket connection after error")
+            print(f"任务 {task_id}: 错误后已清理WebSocket连接")
 
 
 @app.post("/api/upload")
@@ -830,139 +837,139 @@ async def upload_file(
         file: UploadFile = File(...),
         task_id: str = Form(None),
 ):
-    # If client didn't provide task_id, generate a new one
+    # 如果客户端没有提供task_id，则生成一个新的
     if not task_id:
         task_id = str(uuid.uuid4())
 
     progress_store[task_id] = {"type": "upload", "filename": file.filename, "stopped": False}
-    print(f"Starting to process uploaded file: {file.filename}, Task ID: {task_id}, Content Type: {file.content_type}")
+    print(f"开始处理上传文件: {file.filename}, 任务ID: {task_id}, 内容类型: {file.content_type}")
 
-    # Read file content immediately to avoid file being closed
+    # 立即读取文件内容，避免文件被关闭
     content = await file.read()
     file_size = len(content)
-    print(f"File size: {file_size} bytes")
+    print(f"文件大小: {file_size} 字节")
 
     if file_size > config.upload_max_size:
-        print(f"File size exceeds limit: {file_size} > {config.upload_max_size}")
+        print(f"文件大小超过限制: {file_size} > {config.upload_max_size}")
         raise HTTPException(
             status_code=400,
-            detail=f"File size exceeds limit (maximum {config.upload_max_size / 1024 / 1024}MB)"
+            detail=f"文件大小超过限制（最大{config.upload_max_size / 1024 / 1024}MB）"
         )
 
-    # Generate filename
+    # 生成文件名
     file_hash = hashlib.md5(content).hexdigest()
     ext = os.path.splitext(file.filename)[1]
     filename = f"{task_id}_{file_hash}{ext}"
     filepath = os.path.join(UPLOADS_DIR, filename)
-    print(f"Saving file to: {filepath}")
+    print(f"保存文件到: {filepath}")
 
-    # Ensure upload directory exists
+    # 确保上传目录存在
     os.makedirs(UPLOADS_DIR, exist_ok=True)
 
-    # Save file
+    # 保存文件
     with open(filepath, "wb") as f:
         f.write(content)
-    print(f"File saved, size: {os.path.getsize(filepath)} bytes")
+    print(f"文件已保存，大小: {os.path.getsize(filepath)} 字节")
 
-    # Process file asynchronously, pass file path instead of file object
+    # 异步处理文件，传递文件路径而不是文件对象
     asyncio.create_task(process_upload(task_id, file.filename, filepath, file.content_type))
 
     return {"task_id": task_id}
 
 
 async def process_upload(task_id: str, filename: str, filepath: str, content_type: str):
-    # Initialize task status
+    # 初始化任务状态
     progress_store[task_id] = {"type": "upload", "filename": filename, "stopped": False}
-    print(f"Processing uploaded file: {filename}, Task ID: {task_id}, Content Type: {content_type}")
+    print(f"处理上传文件: {filename}, 任务ID: {task_id}, 内容类型: {content_type}")
 
-    # Wait for WebSocket connection
-    for _ in range(50):  # Wait up to 1 second
+    # 等待WebSocket连接
+    for _ in range(50):  # 等待最多1秒
         if task_id in active_connections:
-            print(f"Found WebSocket connection: {task_id}")
+            print(f"已找到WebSocket连接: {task_id}")
             break
         await asyncio.sleep(0.02)
 
-        # Check if task has been stopped
+        # 检查任务是否被停止
         if progress_store.get(task_id, {}).get("stopped", False):
-            print(f"Task {task_id} was stopped while waiting for WebSocket connection")
+            print(f"任务 {task_id} 在等待WebSocket连接时已被停止")
             return
 
     progress = ProgressManager(task_id, STAGES)
 
     try:
-        # Initialize
+        # 初始化
         await progress.report_progress()
-        print(f"Task {task_id}: Initialization complete")
+        print(f"任务 {task_id}: 初始化完成")
 
-        # Check if task has been stopped
+        # 检查任务是否被停止
         if progress_store.get(task_id, {}).get("stopped", False):
-            print(f"Task {task_id} was stopped after initialization")
+            print(f"任务 {task_id} 在初始化后被停止")
             return
 
-        # Parse file
+        # 解析文件
         await progress.report_progress()
-        print(f"Task {task_id}: Starting to parse file")
+        print(f"任务 {task_id}: 开始解析文件")
 
-        # For PDF files, send special prompt message
+        # 对于PDF文件，发送特殊的提示消息
         if content_type == "application/pdf" and task_id in active_connections:
             await active_connections[task_id].send_json({
                 "progress": 40,
-                "status": "Processing PDF file...",
-                "message": "PDF processing may take longer time, please wait. Large PDF files may take several minutes."
+                "status": "处理PDF文件中...",
+                "message": "PDF处理可能需要较长时间，请耐心等待。大型PDF文件可能需要几分钟时间。"
             })
-            print(f"Task {task_id}: Sent PDF processing prompt")
+            print(f"任务 {task_id}: 已发送PDF处理提示")
 
-        print(f"Task {task_id}: Calling process_file to process file")
+        print(f"任务 {task_id}: 调用process_file处理文件")
         result = await process_file(filepath, filename, content_type, task_id)
-        print(f"Task {task_id}: File processing completed, result type: {result.get('type', 'unknown')}")
+        print(f"任务 {task_id}: 文件处理完成，结果类型: {result.get('type', 'unknown')}")
 
-        # Check if task has been stopped
+        # 检查任务是否被停止
         if progress_store.get(task_id, {}).get("stopped", False):
-            print(f"Task {task_id} was stopped after parsing")
+            print(f"任务 {task_id} 在解析文件后被停止")
             return
 
-        # Call API
+        # 调用API
         await progress.report_progress()
-        print(f"Task {task_id}: API stage completed")
+        print(f"任务 {task_id}: API阶段完成")
 
-        # Check if task has been stopped
+        # 检查任务是否被停止
         if progress_store.get(task_id, {}).get("stopped", False):
-            print(f"Task {task_id} was stopped after calling API")
+            print(f"任务 {task_id} 在调用API后被停止")
             return
 
-        # Generate reply
+        # 生成回复
         await asyncio.sleep(0.5)
         await progress.report_progress()
-        print(f"Task {task_id}: Reply generation completed")
+        print(f"任务 {task_id}: 生成回复阶段完成")
 
-        # Check if task has been stopped
+        # 检查任务是否被停止
         if progress_store.get(task_id, {}).get("stopped", False):
-            print(f"Task {task_id} was stopped after reply generation")
+            print(f"任务 {task_id} 在生成回复后被停止")
             return
 
-        # Complete
+        # 完成
         if task_id in active_connections:
-            # Prepare response content based on result type
+            # 根据结果类型准备响应内容
             response_content = ""
-            status_message = "Complete"
+            status_message = "完成"
 
-            # Special handling for PDF-related results
+            # 特殊处理PDF相关的结果
             if result["type"] == "pdf_timeout":
-                status_message = "PDF processing takes longer time"
+                status_message = "PDF处理时间较长"
                 response_content = result.get("content", "")
-                print(f"Task {task_id}: PDF processing timeout")
+                print(f"任务 {task_id}: PDF处理超时")
             elif result["type"] == "pdf_error":
-                status_message = "PDF processing notification"
+                status_message = "PDF处理通知"
                 response_content = result.get("content", "")
-                print(f"Task {task_id}: PDF processing error: {response_content}")
+                print(f"任务 {task_id}: PDF处理错误: {response_content}")
             elif result["type"] == "pdf_unsupported":
-                status_message = "PDF feature limited"
+                status_message = "PDF功能受限"
                 response_content = result.get("content", "")
-                print(f"Task {task_id}: PDF feature limited: {response_content}")
+                print(f"任务 {task_id}: PDF功能受限: {response_content}")
             else:
-                # For other types, use summary or content field
+                # 对于其他类型，使用summary或content字段
                 response_content = result.get("summary", result.get("content", ""))
-                print(f"Task {task_id}: Processing successful, response content length: {len(response_content)} characters")
+                print(f"任务 {task_id}: 处理成功，响应内容长度: {len(response_content)} 字符")
 
             try:
                 await active_connections[task_id].send_json({
@@ -972,132 +979,132 @@ async def process_upload(task_id: str, filename: str, filepath: str, content_typ
                     "file_name": result["file_name"],
                     "content": response_content
                 })
-                print(f"Task {task_id}: Sent final response")
+                print(f"任务 {task_id}: 已发送最终响应")
             except Exception as e:
-                print(f"Task {task_id}: Failed to send response: {str(e)}")
+                print(f"任务 {task_id}: 发送响应失败: {str(e)}")
                 traceback.print_exc()
         else:
-            print(f"Task {task_id}: Cannot send response, WebSocket connection is closed")
+            print(f"任务 {task_id}: 无法发送响应，WebSocket连接已关闭")
 
-        # Save result to file
+        # 保存结果到文件
         task_dir = os.path.join(RUNS_DIR, task_id)
         os.makedirs(task_dir, exist_ok=True)
         result_file = os.path.join(task_dir, "result.json")
         with open(result_file, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False)
-        print(f"Task {task_id}: Result saved to {result_file}")
+        print(f"任务 {task_id}: 结果已保存到 {result_file}")
 
-        # Complete
+        # 完成
         await progress.report_progress()
-        print(f"Task {task_id}: All complete")
+        print(f"任务 {task_id}: 全部完成")
 
     except Exception as e:
-        print(f"Task {task_id} processing failed: {str(e)}")
+        print(f"任务 {task_id} 处理失败: {str(e)}")
         await progress.fail_stage(str(e))
         traceback.print_exc()
 
 
 @app.get("/api/result/{task_id}")
 async def get_result(task_id: str):
-    """Get task result"""
-    print(f"Request to get result for task {task_id}")
+    """获取任务结果"""
+    print(f"请求获取任务 {task_id} 的结果")
 
-    # First check for PDF-specific result file
+    # 首先检查PDF特定的结果文件
     pdf_result_file = os.path.join(RUNS_DIR, task_id, "pdf_result.json")
     if os.path.exists(pdf_result_file):
         try:
-            print(f"Found PDF result file: {pdf_result_file}")
+            print(f"找到PDF结果文件: {pdf_result_file}")
             with open(pdf_result_file, "r", encoding="utf-8") as f:
                 result = json.load(f)
                 print(
-                    f"Successfully loaded PDF result file, type: {result.get('type', 'unknown')}, content length: {len(result.get('content', ''))}")
+                    f"成功加载PDF结果文件，类型: {result.get('type', 'unknown')}, 内容长度: {len(result.get('content', ''))}")
                 return result
         except Exception as e:
-            print(f"Error reading PDF result file: {str(e)}")
+            print(f"读取PDF结果文件时出错: {str(e)}")
             traceback.print_exc()
 
-    # Check regular result file
+    # 检查常规结果文件
     result_file = os.path.join(RUNS_DIR, task_id, "result.json")
     if os.path.exists(result_file):
         try:
-            print(f"Found result file for task {task_id}")
+            print(f"找到任务 {task_id} 的结果文件")
             with open(result_file, "r", encoding="utf-8") as f:
                 result = json.load(f)
-                print(f"Successfully loaded result file, type: {result.get('type', 'unknown')}")
+                print(f"成功加载结果文件，类型: {result.get('type', 'unknown')}")
                 return result
         except Exception as e:
-            print(f"Error reading result file for task {task_id}: {str(e)}")
+            print(f"读取任务 {task_id} 的结果文件时出错: {str(e)}")
             traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"Error reading result file: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"读取结果文件出错: {str(e)}")
 
-    # Check if there's a marker file indicating result was generated but WebSocket send failed
+    # 检查是否有标记文件，表明结果已生成但WebSocket发送失败
     ready_file = os.path.join(RUNS_DIR, task_id, "result_ready.txt")
     if os.path.exists(ready_file):
-        # Try to find any possible result files
-        print(f"Task {task_id} has completion marker but result file is missing")
-        # Look for all json files in directory
+        # 尝试查找任何可能存在的结果文件
+        print(f"任务 {task_id} 有处理完成标记，但结果文件不存在")
+        # 查找目录中的所有json文件
         task_dir = os.path.join(RUNS_DIR, task_id)
         json_files = [f for f in os.listdir(task_dir) if f.endswith('.json')]
 
         if json_files:
-            # Try to load the first JSON file found
+            # 尝试加载第一个找到的JSON文件
             try:
                 with open(os.path.join(task_dir, json_files[0]), "r", encoding="utf-8") as f:
-                    print(f"Attempting to load alternative result file: {json_files[0]}")
+                    print(f"尝试加载备选结果文件: {json_files[0]}")
                     result = json.load(f)
                     return result
             except Exception as e:
-                print(f"Error reading alternative result file: {str(e)}")
+                print(f"读取备选结果文件时出错: {str(e)}")
                 traceback.print_exc()
 
-    # If it's an ongoing task, try to get from memory
+    # 如果是正在进行的任务，尝试从内存中获取
     if task_id in progress_store:
         task_info = progress_store[task_id]
         task_type = task_info.get("type")
 
-        # Task is ongoing but no result yet
-        print(f"Task {task_id} is still in progress, type: {task_type}")
+        # 任务正在进行中，但没有结果
+        print(f"任务 {task_id} 仍在进行中，类型: {task_type}")
 
-        # Try to call API directly for result
+        # 尝试调用API直接获取结果
         if task_type == "chat":
             try:
                 message = task_info.get("message", "")
                 if message:
-                    print(f"Attempting to recall API for task {task_id}")
+                    print(f"尝试为任务 {task_id} 重新调用API")
                     result = await call_llm_api(message, task_id)
 
-                    # Save result to file
+                    # 保存结果到文件
                     task_dir = os.path.join(RUNS_DIR, task_id)
                     os.makedirs(task_dir, exist_ok=True)
                     with open(result_file, "w", encoding="utf-8") as f:
                         json.dump(result, f, ensure_ascii=False)
 
-                    print(f"Generated new API result for task {task_id}")
+                    print(f"为任务 {task_id} 生成了新的API结果")
                     return result
             except Exception as e:
-                print(f"Error recalling API for task {task_id}: {str(e)}")
+                print(f"为任务 {task_id} 重新调用API时出错: {str(e)}")
                 traceback.print_exc()
 
-        # Return in-progress status
+        # 返回进行中状态
         return {
             "status": "processing",
             "task_id": task_id,
             "task_type": task_type,
-            "message": "Task is being processed"
+            "message": "任务正在处理中"
         }
 
-    # Task doesn't exist
-    print(f"No result or progress information found for task {task_id}")
-    raise HTTPException(status_code=404, detail="Task result does not exist")
+    # 任务不存在
+    print(f"未找到任务 {task_id} 的结果或进度信息")
+    raise HTTPException(status_code=404, detail="任务结果不存在")
 
 
 @app.get("/api/test")
 async def test_api():
     try:
-        print("API test endpoint called")
-        # First do a simple self-check
+        print("API测试端点被调用")
+        # 先进行一个简单的自检
         status_info = {
-            "server_status": "Running",
+            "server_status": "运行中",
             "api_base": config.api_base,
             "model": config.model,
             "upload_dir_exists": os.path.exists(UPLOADS_DIR),
@@ -1105,88 +1112,88 @@ async def test_api():
             "runs_dir_exists": os.path.exists(RUNS_DIR),
         }
 
-        print("Starting API test...")
-        # Try to call LLM API
+        print("开始API测试...")
+        # 尝试调用LLM API
         try:
             start_time = datetime.now()
             result = await call_llm_api("This is a test message. Please respond with 'API test successful'")
             end_time = datetime.now()
-            response_time = (end_time - start_time).total_seconds() * 1000  # milliseconds
+            response_time = (end_time - start_time).total_seconds() * 1000  # 毫秒
 
-            status_info["api_call_status"] = "Success"
+            status_info["api_call_status"] = "成功"
             status_info["api_response_time_ms"] = response_time
             status_info["api_response"] = result["reply"]
 
             return {
                 "status": "success",
-                "message": "API connection test successful",
+                "message": "API连接测试成功",
                 "server_info": status_info,
                 "response": result
             }
 
         except Exception as api_error:
-            print(f"API call failed: {str(api_error)}")
+            print(f"API调用失败: {str(api_error)}")
             traceback.print_exc()
 
-            # Try to verify if API key is valid
+            # 尝试验证API密钥是否有效
             if isinstance(api_error, HTTPException) and api_error.status_code == 401:
-                status_info["api_call_status"] = "Invalid key"
+                status_info["api_call_status"] = "密钥无效"
             else:
-                status_info["api_call_status"] = "Failed"
+                status_info["api_call_status"] = "失败"
 
             status_info["api_error"] = str(api_error)
 
             return {
                 "status": "error",
-                "message": f"API call failed: {str(api_error)}",
+                "message": f"API调用失败: {str(api_error)}",
                 "server_info": status_info,
                 "detail": str(api_error)
             }
 
     except Exception as e:
-        print(f"Error during API test: {str(e)}")
+        print(f"测试API过程中出现错误: {str(e)}")
         traceback.print_exc()
         raise
 
 
 @app.get("/")
 async def hello():
-    return {"message": "Deepchat API service is running"}
+    return {"message": "Deepchat API服务正在运行"}
 
 
 async def test_connection():
     try:
         await call_llm_api("Test connection")
-        print("LLM API connection successful")
+        print("LLM API连接成功")
         return True
     except Exception as e:
-        print(f"LLM API connection failed: {e}")
+        print(f"LLM API连接失败: {e}")
         return False
 
 
 @app.get("/api/ping")
 async def ping():
-    """Simple ping test to check if server is running"""
+    """简单的ping测试，用于检查服务器是否运行"""
     return {"status": "ok", "timestamp": datetime.now().isoformat()}
 
 
 @app.post("/api/config")
 async def update_config(request: Request):
-    """Update API configuration"""
+    """更新API配置"""
     try:
         data = await request.json()
         result = config.update_config(data)
         return result
     except Exception as e:
-        print(f"Error updating configuration: {str(e)}")
+        print(f"更新配置时出错: {str(e)}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to update configuration: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"更新配置失败: {str(e)}")
 
 
 @app.get("/api/config")
 async def get_config():
-    """Get current API configuration"""
-    # Return configuration but hide complete API key value
+    """获取当前API配置"""
+    # 返回配置但隐藏API密钥的完整值
     config_data = {
         "api_base": config.api_base,
         "model": config.model,
@@ -1195,9 +1202,9 @@ async def get_config():
         "upload_max_size": config.upload_max_size
     }
 
-    # Only show API key existence status, don't return actual value
+    # 只显示API密钥的存在状态，不返回具体值
     if config.api_key:
-        # If there's an API key, only return first 4 and last 4 digits, replace middle with *
+        # 如果有API密钥，只返回前4位和后4位，中间用*替代
         if len(config.api_key) > 8:
             masked_key = config.api_key[:4] + "*" * (len(config.api_key) - 8) + config.api_key[-4:]
         else:
@@ -1213,7 +1220,7 @@ if __name__ == "__main__":
     import uvicorn
 
     port = 8000
-    print(f"Port is {port}")
+    print(f"端口为{port}")
     asyncio.run(test_connection())
-    print("Service started......")
+    print("服务已启动......")
     uvicorn.run(app, host="0.0.0.0", port=port)
