@@ -2,62 +2,62 @@
 session_start();
 require 'DatabaseHelper.php';
 
-// 记录请求开始
-error_log("开始创建新对话");
+// Log request start
+error_log("Starting creation of new conversation");
 
-// 获取POST数据
+// Get POST data
 $data = json_decode(file_get_contents('php://input'), true);
-error_log("接收到的数据: " . print_r($data, true));
+error_log("Received data: " . print_r($data, true));
 
 try {
-    // 检查是否有用户ID
+    // Check for user ID
     $user_id = $data['user_id'] ?? $_SESSION['user_id'] ?? null;
-    error_log("使用的用户ID: " . ($user_id ?? 'null'));
+    error_log("Using user ID: " . ($user_id ?? 'null'));
     
     if (!$user_id) {
-        throw new Exception('未找到用户ID，请重新登录');
+        throw new Exception('User ID not found, please log in again');
     }
 
-    $title = $data['title'] ?? '新的对话';
+    $title = $data['title'] ?? 'New Conversation';
 
     $db = new DatabaseHelper();
     
-    // 开始事务
+    // Begin transaction
     $pdo = $db->getConnection();
     $pdo->beginTransaction();
 
     try {
-        // 创建新对话
+        // Create new conversation
         $conversation_id = $db->createConversation($user_id, $title);
         
         if (!$conversation_id) {
-            throw new Exception('创建对话失败');
+            throw new Exception('Conversation creation failed');
         }
 
-        // 提交事务
+        // Commit transaction
         $pdo->commit();
 
-        // 更新会话变量
+        // Update session variable
         $_SESSION['current_conversation_id'] = $conversation_id;
 
-        // 记录成功信息
-        error_log("成功创建新对话: conversation_id = $conversation_id, user_id = $user_id");
+        // Log success information
+        error_log("Successfully created new conversation: conversation_id = $conversation_id, user_id = $user_id");
 
         echo json_encode([
             'status' => 'success',
             'conversation_id' => $conversation_id,
-            'message' => '成功创建新对话'
+            'message' => 'Successfully created new conversation'
         ]);
 
     } catch (Exception $e) {
-        // 如果出现错误，回滚事务
+        // Roll back transaction on error
         $pdo->rollBack();
         throw $e;
     }
 
 } catch (Exception $e) {
-    // 记录错误
-    error_log("创建对话失败: " . $e->getMessage() . "\nPOST数据: " . print_r($data, true));
+    // Log error
+    error_log("Conversation creation failed: " . $e->getMessage() . "\nPOST data: " . print_r($data, true));
     
     http_response_code(500);
     echo json_encode([
@@ -71,5 +71,5 @@ try {
     ]);
 }
 
-error_log("创建对话请求结束");
+error_log("Create conversation request ended");
 ?>

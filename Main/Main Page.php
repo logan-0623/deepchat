@@ -221,48 +221,48 @@
     <div class="container">
         <div class="header">
             <div class="logo">Deepchat AI</div>
-            <div class="subtitle">智能交互平台 · 让AI助力您的工作与学习</div>
+            <div class="subtitle">Intelligent Interaction Platform · Empowering Your Work and Study with AI</div>
         </div>
         
         <div class="card-container">
             <div class="feature-card">
                 <div class="card-icon">💬</div>
-                <div class="card-title">智能对话</div>
+                <div class="card-title">AI Chat</div>
                 <div class="card-description">
-                    与AI进行自然、流畅的对话。提问、讨论、解决问题，获取您需要的信息和建议。支持多轮对话，记忆上下文，提供更加连贯的交流体验。
+                    Engage in natural, fluent conversations with AI. Ask questions, discuss topics, solve problems, and get the information and advice you need. Supports multi-turn dialogue, remembering context for a more coherent communication experience.
                 </div>
-                <button class="card-button" id="chatButton">开始对话</button>
+                <button class="card-button" id="chatButton">Start Chat</button>
             </div>
             
             <div class="feature-card">
                 <div class="card-icon">📄</div>
-                <div class="card-title">文档分析</div>
+                <div class="card-title">Document Analysis</div>
                 <div class="card-description">
-                    上传PDF文件或文本文档，AI将为您提取关键信息，回答相关问题，帮助您更高效地处理和理解文档内容。无需人工筛选，快速获取文档洞察。
+                    Upload PDF or text documents, and AI will extract key information, answer related questions, and help you process and understand content more efficiently. No manual filtering needed, quickly gain insights from documents.
                 </div>
-                <button class="card-button" id="documentButton">分析文档</button>
+                <button class="card-button" id="documentButton">Analyze Document</button>
             </div>
             
             <div class="feature-card">
                 <div class="card-icon">⚙️</div>
-                <div class="card-title">系统配置</div>
+                <div class="card-title">System Configuration</div>
                 <div class="card-description">
-                    自定义您的AI体验。配置API连接参数，选择您偏好的语言模型，调整响应生成参数，满足您的特定需求，打造个性化的AI助手。
+                    Customize your AI experience. Configure API connection parameters, choose your preferred language model, adjust response generation settings to meet your specific needs, and create a personalized AI assistant.
                 </div>
-                <button class="card-button" id="configButton">配置系统</button>
+                <button class="card-button" id="configButton">Configure System</button>
             </div>
         </div>
         
         <div class="footer">
-            © 2024 Deepchat AI · 版本 v1.0.0
+            © 2024 Deepchat AI · Version v1.0.0
         </div>
     </div>
     
-    <!-- 配置模态框 -->
+    <!-- Configuration modal -->
     <div class="modal" id="configModal">
         <div class="modal-content">
             <div class="close-modal" id="closeConfigModal">&times;</div>
-            <div class="modal-title">API配置</div>
+            <div class="modal-title">API Configuration</div>
             
             <div class="form-group">
                 <label for="apiKey">API Key</label>
@@ -280,144 +280,144 @@
             </div>
             
             <div class="form-group">
-                <label for="modelName">模型名称</label>
+                <label for="modelName">Model Name</label>
                 <input type="text" id="modelName" placeholder="deepseek-chat">
             </div>
             
-            <button class="modal-button" id="saveConfigButton">保存配置</button>
+            <button class="modal-button" id="saveConfigButton">Save Configuration</button>
         </div>
     </div>
     
-    <!-- 测试结果模态框 -->
-    <div class="modal" id="testResultModal">
-        <div class="modal-content">
-            <div class="close-modal" id="closeTestResultModal">&times;</div>
-            <div class="modal-title">API测试结果</div>
-            <div id="testResultContent" style="white-space: pre-wrap; max-height: 400px; overflow-y: auto;"></div>
-        </div>
+    <!-- Test Results Modal -->
+<div class="modal" id="testResultModal">
+    <div class="modal-content">
+        <div class="close-modal" id="closeTestResultModal">&times;</div>
+        <div class="modal-title">API Test Results</div>
+        <div id="testResultContent" style="white-space: pre-wrap; max-height: 400px; overflow-y: auto;"></div>
     </div>
+</div>
+
+<script>
+    // Configuration variables
+    let config = {
+        apiKey: localStorage.getItem('apiKey') || '',
+        apiBaseUrl: localStorage.getItem('apiBaseUrl') || 'http://127.0.0.1:9000',
+        wsBaseUrl: localStorage.getItem('wsBaseUrl') || 'ws://127.0.0.1:9000',
+        modelName: localStorage.getItem('modelName') || 'deepseek-chat'
+    };
     
-    <script>
-        // 配置变量
-        let config = {
-            apiKey: localStorage.getItem('apiKey') || '',
-            apiBaseUrl: localStorage.getItem('apiBaseUrl') || 'http://127.0.0.1:9000',
-            wsBaseUrl: localStorage.getItem('wsBaseUrl') || 'ws://127.0.0.1:9000',
-            modelName: localStorage.getItem('modelName') || 'deepseek-chat'
-        };
+    // DOM elements
+    const chatButton = document.getElementById('chatButton');
+    const documentButton = document.getElementById('documentButton');
+    const configButton = document.getElementById('configButton');
+    const configModal = document.getElementById('configModal');
+    const closeConfigModal = document.getElementById('closeConfigModal');
+    const apiKeyInput = document.getElementById('apiKey');
+    const apiBaseUrlInput = document.getElementById('apiBaseUrl');
+    const wsBaseUrlInput = document.getElementById('wsBaseUrl');
+    const modelNameInput = document.getElementById('modelName');
+    const saveConfigButton = document.getElementById('saveConfigButton');
+    const testResultModal = document.getElementById('testResultModal');
+    const closeTestResultModal = document.getElementById('closeTestResultModal');
+    const testResultContent = document.getElementById('testResultContent');
+    
+    // Initialization
+    document.addEventListener('DOMContentLoaded', function() {
+        // Populate configuration form
+        apiKeyInput.value = config.apiKey;
+        apiBaseUrlInput.value = config.apiBaseUrl;
+        wsBaseUrlInput.value = config.wsBaseUrl;
+        modelNameInput.value = config.modelName;
         
-        // DOM元素
-        const chatButton = document.getElementById('chatButton');
-        const documentButton = document.getElementById('documentButton');
-        const configButton = document.getElementById('configButton');
-        const configModal = document.getElementById('configModal');
-        const closeConfigModal = document.getElementById('closeConfigModal');
-        const apiKeyInput = document.getElementById('apiKey');
-        const apiBaseUrlInput = document.getElementById('apiBaseUrl');
-        const wsBaseUrlInput = document.getElementById('wsBaseUrl');
-        const modelNameInput = document.getElementById('modelName');
-        const saveConfigButton = document.getElementById('saveConfigButton');
-        const testResultModal = document.getElementById('testResultModal');
-        const closeTestResultModal = document.getElementById('closeTestResultModal');
-        const testResultContent = document.getElementById('testResultContent');
+        // Set up event listeners
+        chatButton.addEventListener('click', () => window.location.href = 'Chat_Interface.php');
+        documentButton.addEventListener('click', () => window.location.href = 'Chat_Interface.php');
+        configButton.addEventListener('click', () => configModal.style.display = 'flex');
+        closeConfigModal.addEventListener('click', () => configModal.style.display = 'none');
+        saveConfigButton.addEventListener('click', saveConfig);
+        closeTestResultModal.addEventListener('click', () => testResultModal.style.display = 'none');
+    });
+    
+       // Save configuration
+function saveConfig() {
+    config.apiKey = apiKeyInput.value.trim();
+    config.apiBaseUrl = apiBaseUrlInput.value.trim();
+    config.wsBaseUrl = wsBaseUrlInput.value.trim();
+    config.modelName = modelNameInput.value.trim();
+    
+    // Save to local storage
+    localStorage.setItem('apiKey', config.apiKey);
+    localStorage.setItem('apiBaseUrl', config.apiBaseUrl);
+    localStorage.setItem('wsBaseUrl', config.wsBaseUrl);
+    localStorage.setItem('modelName', config.modelName);
+    
+    // Close modal
+    configModal.style.display = 'none';
+    
+    // Display success message
+    alert('Configuration saved.');
+}
+
+// Test API connection
+async function testApi() {
+    try {
+        const response = await fetch(`${config.apiBaseUrl}/api/test`);
         
-        // 初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            // 填充配置表单
-            apiKeyInput.value = config.apiKey;
-            apiBaseUrlInput.value = config.apiBaseUrl;
-            wsBaseUrlInput.value = config.wsBaseUrl;
-            modelNameInput.value = config.modelName;
-            
-            // 事件监听器设置
-            chatButton.addEventListener('click', () => window.location.href = 'Chat_Interface.php');
-            documentButton.addEventListener('click', () => window.location.href = 'Chat_Interface.php');
-            configButton.addEventListener('click', () => configModal.style.display = 'flex');
-            closeConfigModal.addEventListener('click', () => configModal.style.display = 'none');
-            saveConfigButton.addEventListener('click', saveConfig);
-            closeTestResultModal.addEventListener('click', () => testResultModal.style.display = 'none');
-        });
-        
-        // 保存配置
-        function saveConfig() {
-            config.apiKey = apiKeyInput.value.trim();
-            config.apiBaseUrl = apiBaseUrlInput.value.trim();
-            config.wsBaseUrl = wsBaseUrlInput.value.trim();
-            config.modelName = modelNameInput.value.trim();
-            
-            // 保存到本地存储
-            localStorage.setItem('apiKey', config.apiKey);
-            localStorage.setItem('apiBaseUrl', config.apiBaseUrl);
-            localStorage.setItem('wsBaseUrl', config.wsBaseUrl);
-            localStorage.setItem('modelName', config.modelName);
-            
-            // 关闭模态框
-            configModal.style.display = 'none';
-            
-            // 显示成功提示
-            alert('配置已保存。');
+        if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
         }
         
-        // 测试API连接
-        async function testApi() {
-            try {
-                const response = await fetch(`${config.apiBaseUrl}/api/test`);
+        const result = await response.json();
+        console.log('API test result:', result);
                 
-                if (!response.ok) {
-                    throw new Error(`API错误: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                console.log('API测试结果:', result);
-                
-                // 准备测试结果内容
-                let resultContent = '';
-                
-                if (result.status === 'success') {
-                    resultContent += `✅ API连接测试成功\n\n`;
-                    resultContent += `🔹 服务器状态: ${result.server_info.server_status}\n`;
-                    resultContent += `🔹 模型: ${result.server_info.model}\n`;
-                    resultContent += `🔹 API基础URL: ${result.server_info.api_base}\n`;
-                    resultContent += `🔹 响应时间: ${result.server_info.api_response_time_ms.toFixed(2)}ms\n\n`;
-                    resultContent += `🔹 API回复: "${result.reply}"\n`;
-                    
-                    alert('API测试成功！');
-                } else {
-                    resultContent += `❌ API连接测试失败\n\n`;
-                    resultContent += `🔸 错误信息: ${result.message}\n`;
-                    
-                    if (result.server_info) {
-                        resultContent += `\n服务器信息:\n`;
-                        resultContent += `🔸 服务器状态: ${result.server_info.server_status}\n`;
-                        resultContent += `🔸 模型: ${result.server_info.model}\n`;
-                        resultContent += `🔸 API基础URL: ${result.server_info.api_base}\n`;
-                        
-                        if (result.server_info.api_error) {
-                            resultContent += `🔸 API错误: ${result.server_info.api_error}\n`;
-                        }
-                    }
-                    
-                    if (result.detail) {
-                        resultContent += `\n详细错误信息: ${result.detail}\n`;
-                    }
-                    
-                    alert(`API测试失败: ${result.message}`);
-                }
-                
-                // 显示测试结果模态框
-                testResultContent.textContent = resultContent;
-                testResultModal.style.display = 'flex';
-                
-            } catch (error) {
-                console.error('API测试失败:', error);
-                
-                // 显示测试结果模态框
-                testResultContent.textContent = `❌ API连接测试失败\n\n🔸 错误信息: ${error.message}\n\n可能的原因:\n- 后端服务未运行\n- API基础URL不正确\n- 网络连接问题`;
-                testResultModal.style.display = 'flex';
-                
-                alert(`API测试失败: ${error.message}`);
-            }
+               // Prepare test results content
+let resultContent = '';
+
+if (result.status === 'success') {
+    resultContent += `✅ API connection test successful\n\n`;
+    resultContent += `🔹 Server status: ${result.server_info.server_status}\n`;
+    resultContent += `🔹 Model: ${result.server_info.model}\n`;
+    resultContent += `🔹 API base URL: ${result.server_info.api_base}\n`;
+    resultContent += `🔹 Response time: ${result.server_info.api_response_time_ms.toFixed(2)}ms\n\n`;
+    resultContent += `🔹 API reply: "${result.reply}"\n`;
+
+    alert('API test successful!');
+} else {
+    resultContent += `❌ API connection test failed\n\n`;
+    resultContent += `🔸 Error message: ${result.message}\n`;
+
+    if (result.server_info) {
+        resultContent += `\nServer info:\n`;
+        resultContent += `🔸 Server status: ${result.server_info.server_status}\n`;
+        resultContent += `🔸 Model: ${result.server_info.model}\n`;
+        resultContent += `🔸 API base URL: ${result.server_info.api_base}\n`;
+
+        if (result.server_info.api_error) {
+            resultContent += `🔸 API error: ${result.server_info.api_error}\n`;
         }
+    }
+
+    if (result.detail) {
+        resultContent += `\nDetailed error info: ${result.detail}\n`;
+    }
+
+    alert(`API test failed: ${result.message}`);
+}
+
+               // Display the test result modal
+testResultContent.textContent = resultContent;
+testResultModal.style.display = 'flex';
+
+} catch (error) {
+    console.error('API test failed:', error);
+
+    // Display the test result modal
+    testResultContent.textContent = `❌ API connection test failed\n\n🔸 Error message: ${error.message}\n\nPossible reasons:\n- Backend service not running\n- Incorrect API base URL\n- Network connectivity issues`;
+    testResultModal.style.display = 'flex';
+
+    alert(`API test failed: ${error.message}`);
+}
+}
     </script>
 </body>
 </html>

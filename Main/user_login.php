@@ -12,7 +12,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // Login attempts are logged
     error_log("Login attempts - Username: " . $username);
 
-    // 参数验证
+    // check var
     if (empty($username) || empty($password)) {
         $error = "The username and password cannot be empty";
         error_log("Login failed - The username or password is empty");
@@ -35,7 +35,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 error_log("Session ID: " . session_id());
                 error_log("Session content: " . print_r($_SESSION, true));
                 
-                // 重定向到聊天界面
+                // reload to chat
                 header("Location: Chat_Interface.php");
                 exit();
             } else {

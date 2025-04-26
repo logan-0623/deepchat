@@ -1,19 +1,19 @@
 #!/bin/bash
 
-# 检查Python是否安装
+# Check if Python is installed
 if ! command -v python3 &> /dev/null; then
-    echo "错误: 未找到Python3。请安装Python3后再试。"
+    echo "Error: Python3 not found. Please install Python3 and try again."
     exit 1
 fi
 
-# 检查依赖
-echo "检查和安装依赖..."
+# Checking and installing dependencies
+echo "Checking and installing dependencies..."
 python3 -m pip install fastapi uvicorn aiohttp python-multipart
 python3 -m pip install -r requirements.txt
 
-# 确保存在必要的目录
+# Ensure necessary directories exist
 mkdir -p uploads runs cache
 
-# 启动后端服务
-echo "启动Deepchat后端服务..."
-python3 backend.py 
+# Start Deepchat backend service
+echo "Starting Deepchat backend service..."
+python3 backend.py

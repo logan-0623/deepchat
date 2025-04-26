@@ -9,7 +9,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         
         // Verify the verification code
         if (empty($_POST['captcha']) || $_POST['captcha'] !== $_SESSION['captcha']) {
-            throw new Exception("验证码错误");
+            throw new Exception("Captcha error");
         }
 
         // Prepare user data
@@ -23,7 +23,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             'g-recaptcha-response' => $_POST['g-recaptcha-response'] ?? null
         ];
 
-        // 注册用户
+        // register
         $userId = $db->registerUser($userData);
         
         // If the registration is successful, you will be automatically logged in and redirected
@@ -43,7 +43,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <html>
     <head>
         <meta charset="UTF-8">
-        <title>User Register Table</title>
+        <title>User Register</title>
         <style>
             #captcha_image {
                 margin-left: 10px;
@@ -155,7 +155,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <?php unset($_SESSION['register_error']); ?>
             <?php endif; ?>
 
-            <h1>User Register Table</h1>
+            <h1>User Register</h1>
             <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post" onsubmit="return validateForm()">
                 <input type="hidden" id="human_check" name="human_check" value="<?php echo time(); ?>">
                 
@@ -166,7 +166,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 
                 <div>
                     <label for="age">Age:</label>
-                    <input type="number" id="age" name="age" min="0" max="100" placeholder="Optional">
+                    <input type="number" id="age" name="age" min="0" max="100" placeholder="Must">
                 </div>
                 
                 <div>
@@ -181,7 +181,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 
                 <div>
                     <label for="email">Email:</label>
-                    <input type="email" id="email" name="email" placeholder="Optional">
+                    <input type="email" id="email" name="email" placeholder="Must">
                 </div>
                 
                 <div>
@@ -209,7 +209,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 </div>
                 
                 <div>
-                    <div class="g-recaptcha" data-sitekey="6LcSGiMrAAAAAEBLB5ak0G6Vuq2qxA6XFstS3Nac"></div>
+                    <div class="g-recaptcha" data-sitekey="6LcD5CQrAAAAABucvQzTUFm3ElqhDgKp1RCsOZSO"></div>
                     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
                 </div>
                 

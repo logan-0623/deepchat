@@ -16,12 +16,12 @@ class ChatBackend {
     }
 
     private function loadConfig() {
-        // 从配置文件加载配置
+        // Load configuration from file
         $configFile = 'config.json';
         if (file_exists($configFile)) {
             $this->config = json_decode(file_get_contents($configFile), true);
         } else {
-            // 默认配置
+            // Default configuration
             $this->config = [
                 'api_key' => '',
                 'api_base' => 'https://api.deepseek.com/v1',
@@ -37,7 +37,7 @@ class ChatBackend {
 
     private function setupDirectories() {
         $this->uploadDir = "uploads/" . date("Y-m-d");
-        $this->cacheDir = "cache/" . date("Y-m-d");
+        $this->cacheDir  = "cache/" . date("Y-m-d");
 
         foreach ([$this->uploadDir, $this->cacheDir] as $dir) {
             if (!file_exists($dir)) {
@@ -64,8 +64,8 @@ class ChatBackend {
         if ($jsonResponse === false) {
             $this->logMessage('JSON encode error: ' . json_last_error_msg(), 'error');
             $jsonResponse = json_encode([
-                'status' => 'error',
-                'message' => 'JSON编码错误'
+                'status'  => 'error',
+                'message' => 'JSON encoding error'
             ]);
         }
 
@@ -76,8 +76,8 @@ class ChatBackend {
     private function handleError($message, $code = 500) {
         $this->logMessage($message, 'error');
         $this->sendJsonResponse([
-            'status' => 'error',
-            'code' => $code,
+            'status'  => 'error',
+            'code'    => $code,
             'message' => $message
         ]);
     }
@@ -87,12 +87,12 @@ class ChatBackend {
             $ch = curl_init($this->config['api_base'] . '/chat/completions');
 
             $data = [
-                "model" => $this->config['model'],
-                "messages" => [
+                "model"       => $this->config['model'],
+                "messages"    => [
                     ["role" => "user", "content" => $message]
                 ],
                 "temperature" => $this->config['temperature'],
-                "max_tokens" => $this->config['max_tokens']
+                "max_tokens"  => $this->config['max_tokens']
             ];
 
             $headers = [
@@ -101,25 +101,25 @@ class ChatBackend {
             ];
 
             curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_POST => true,
-                CURLOPT_HTTPHEADER => $headers,
-                CURLOPT_POSTFIELDS => json_encode($data),
-                CURLOPT_SSL_VERIFYPEER => false
+                CURLOPT_RETURNTRANSFER    => true,
+                CURLOPT_POST             => true,
+                CURLOPT_HTTPHEADER       => $headers,
+                CURLOPT_POSTFIELDS       => json_encode($data),
+                CURLOPT_SSL_VERIFYPEER   => false
             ]);
 
             $startTime = microtime(true);
-            $response = curl_exec($ch);
-            $endTime = microtime(true);
+            $response  = curl_exec($ch);
+            $endTime   = microtime(true);
 
             if (curl_errno($ch)) {
-                throw new Exception("API请求失败: " . curl_error($ch));
+                throw new Exception("API request failed: " . curl_error($ch));
             }
 
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
 
-            // 记录API调用信息
+            // Log API call information
             $this->logMessage(sprintf(
                 "API Call - Task: %s, Duration: %.2fs, Status: %d",
                 $taskId ?? 'no-task',
@@ -128,22 +128,22 @@ class ChatBackend {
             ));
 
             if ($httpCode !== 200) {
-                throw new Exception("API返回错误状态码: " . $httpCode);
+                throw new Exception("API returned error status code: " . $httpCode);
             }
 
             $result = json_decode($response, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new Exception("API响应解析失败: " . json_last_error_msg());
+                throw new Exception("Failed to parse API response: " . json_last_error_msg());
             }
 
             if (!isset($result['choices'][0]['message']['content'])) {
-                throw new Exception("API响应格式错误");
+                throw new Exception("API response format error");
             }
 
             return [
-                'status' => 'success',
-                'reply' => $result['choices'][0]['message']['content'],
-                'task_id' => $taskId,
+                'status'        => 'success',
+                'reply'         => $result['choices'][0]['message']['content'],
+                'task_id'       => $taskId,
                 'response_time' => round($endTime - $startTime, 3)
             ];
 
@@ -156,51 +156,51 @@ class ChatBackend {
     private function handleFileUpload($file) {
         try {
             if ($file['error'] !== UPLOAD_ERR_OK) {
-                throw new Exception("文件上传失败: " . $file['error']);
+                throw new Exception("File upload failed: " . $file['error']);
             }
 
             if ($file['size'] > $this->config['upload_max_size']) {
-                throw new Exception("文件大小超过限制（最大" . ($this->config['upload_max_size'] / 1024 / 1024) . "MB）");
+                throw new Exception("File size exceeds limit (max " . ($this->config['upload_max_size'] / 1024 / 1024) . "MB)");
             }
 
-            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $finfo    = finfo_open(FILEINFO_MIME_TYPE);
             $mimeType = finfo_file($finfo, $file['tmp_name']);
             finfo_close($finfo);
 
             if (!in_array($mimeType, $this->config['allowed_types'])) {
-                throw new Exception("不支持的文件类型（仅支持PDF和TXT）");
+                throw new Exception("Unsupported file type (only PDF and TXT allowed)");
             }
 
-            $taskId = $this->generateTaskId();
-            $fileName = $taskId . '_' . basename($file['name']);
+            $taskId    = $this->generateTaskId();
+            $fileName  = $taskId . '_' . basename($file['name']);
             $targetPath = $this->uploadDir . '/' . $fileName;
 
             if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
-                throw new Exception("文件保存失败");
+                throw new Exception("Failed to save file");
             }
 
-            // 如果是PDF文件，使用PDF处理类
+            // If it's a PDF file, use the PDF processor class
             if ($mimeType === 'application/pdf') {
                 require_once 'Chat.php';
                 $processor = new LightPDFProcessor($targetPath);
-                $summary = $processor->generateSummary();
+                $summary   = $processor->generateSummary();
                 return [
-                    'status' => 'success',
-                    'type' => 'pdf',
-                    'task_id' => $taskId,
+                    'status'    => 'success',
+                    'type'      => 'pdf',
+                    'task_id'   => $taskId,
                     'file_name' => $fileName,
-                    'summary' => $summary
+                    'summary'   => $summary
                 ];
             }
 
-            // 如果是文本文件，读取内容
+            // If it's a text file, read the content
             $content = file_get_contents($targetPath);
             return [
-                'status' => 'success',
-                'type' => 'text',
-                'task_id' => $taskId,
+                'status'    => 'success',
+                'type'      => 'text',
+                'task_id'   => $taskId,
                 'file_name' => $fileName,
-                'content' => $content
+                'content'   => $content
             ];
 
         } catch (Exception $e) {
@@ -211,7 +211,7 @@ class ChatBackend {
 
     public function handleRequest() {
         try {
-            // 获取输入数据
+            // Get input data
             if (isset($_FILES['file'])) {
                 $result = $this->handleFileUpload($_FILES['file']);
                 $this->sendJsonResponse($result);
@@ -220,17 +220,17 @@ class ChatBackend {
 
             $rawInput = file_get_contents('php://input');
             if (empty($rawInput)) {
-                throw new Exception("没有接收到输入数据");
+                throw new Exception("No input data received");
             }
 
             $input = json_decode($rawInput, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new Exception("JSON解析错误: " . json_last_error_msg());
+                throw new Exception("JSON parse error: " . json_last_error_msg());
             }
 
             $message = isset($input['message']) ? trim($input['message']) : '';
             if (empty($message)) {
-                throw new Exception("消息不能为空");
+                throw new Exception("Message cannot be empty");
             }
 
             $taskId = $this->generateTaskId();
@@ -243,14 +243,14 @@ class ChatBackend {
     }
 }
 
-// 实例化并处理请求
+// Instantiate and handle request
 try {
     $chatBackend = new ChatBackend();
     $chatBackend->handleRequest();
 } catch (Exception $e) {
     header('Content-Type: application/json');
     echo json_encode([
-        'status' => 'error',
-        'message' => '系统错误: ' . $e->getMessage()
+        'status'  => 'error',
+        'message' => 'System error: ' . $e->getMessage()
     ]);
 }

@@ -1,25 +1,25 @@
 @echo off
-echo 正在启动Deepchat后端服务...
+echo Starting Deepchat backend service...
 
-:: 检查Python是否安装
+:: Check if Python is installed
 python --version >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
-    echo 错误: 未找到Python。请安装Python后再试。
+    echo Error: Python not found. Please install Python and try again.
     pause
     exit /b 1
 )
 
-:: 检查并安装依赖
-echo 检查和安装依赖...
+:: Check and install dependencies
+echo Checking and installing dependencies...
 python -m pip install fastapi uvicorn aiohttp python-multipart
 
-:: 创建必要的目录
+:: Create necessary directories
 if not exist uploads mkdir uploads
 if not exist runs mkdir runs
 if not exist cache mkdir cache
 
-:: 启动后端服务
-echo 启动Deepchat后端服务...
+:: Start backend service
+echo Starting Deepchat backend service...
 python backend.py
 
-pause 
+pause

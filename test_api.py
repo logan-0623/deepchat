@@ -2,7 +2,7 @@ import aiohttp
 import asyncio
 
 async def test_api():
-    api_key = "sk-9535e904340c486ca1cb4a9ae8fd1fc0"  # 您的API密钥
+    api_key = "sk-9535e904340c486ca1cb4a9ae8fd1fc0"  # Your API key
     api_base = "https://api.deepseek.com/v1"
     model = "deepseek-chat"
     
@@ -13,7 +13,7 @@ async def test_api():
     
     data = {
         "model": model,
-        "messages": [{"role": "user", "content": "你好，请简单介绍一下自己"}],
+        "messages": [{"role": "user", "content": "Hello, please briefly introduce yourself"}],
         "temperature": 0.7,
         "max_tokens": 1000
     }
@@ -22,14 +22,14 @@ async def test_api():
     
     async with aiohttp.ClientSession() as session:
         async with session.post(url, headers=headers, json=data, ssl=False) as resp:
-            print(f"状态码: {resp.status}")
+            print(f"Status code: {resp.status}")
             if resp.status == 200:
                 result = await resp.json()
                 response = result.get("choices", [{}])[0].get("message", {}).get("content", "")
-                print(f"回复: {response}")
+                print(f"Reply: {response}")
             else:
                 text = await resp.text()
-                print(f"错误: {text}")
+                print(f"Error: {text}")
 
 if __name__ == "__main__":
     asyncio.run(test_api())

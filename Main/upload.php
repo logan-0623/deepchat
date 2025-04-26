@@ -1,7 +1,7 @@
 <?php
 /**
- * 仅负责保存用户上传的文件，并（可选）生成 PDF 摘要。
- * 返回 JSON: {status, task_id, file_name, type, summary?}
+ * Responsible solely for saving user-uploaded files and (optionally) generating a PDF summary.
+ * Returns JSON: {status, task_id, file_name, type, summary?}
  */
 header('Content-Type: application/json');
 error_reporting(E_ALL);
@@ -14,14 +14,14 @@ require_once __DIR__ . '/utils/LightPDFBridge.php';
 
 try {
     if (!isset($_FILES['file'])) {
-        throw new Exception('没有检测到文件');
+        throw new Exception('No file detected');
     }
 
-    // 1. 保存文件
+    // 1. Save file
     $helper   = new FileHelper();
     $fileInfo = $helper->save($_FILES['file']);      // [task_id, file_name, type, path]
 
-    // 2. 若是 PDF，立刻生成摘要（可注释掉此段改为异步）
+    // 2. If it's a PDF, generate the summary immediately (comment out this section to make it asynchronous)
     $summary = null;
     if ($fileInfo['type'] === 'pdf') {
         $bridge  = new LightPDFBridge();

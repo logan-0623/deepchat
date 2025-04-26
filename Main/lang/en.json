@@ -79,11 +79,8 @@
     "server_info":"Server Information",
     "detailed_error":"Detailed error message",
     "determined_delete":"Are you sure you want to delete this conversation?",
-    "no_diolog":"No related conversation found"
-    
-    
-
-    
-  
-
-  }
+    "no_diolog":"No related conversation found",
+    "button_logout": "Logout",
+    "confirm_logout": "Are you sure you want to logout?",
+    "logout_failed": "Logout failed, please try again"
+}

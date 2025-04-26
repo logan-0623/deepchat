@@ -3,11 +3,11 @@ header('Content-Type: application/json');
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
-// 添加错误日志
+// Enable error logging
 ini_set('log_errors', 1);
 ini_set('error_log', 'php_errors.log');
 
-require_once 'Chat.php';  // 引入PDF处理类
+require_once 'Chat.php';  // Include the PDF handling class
 
 class ChatBackend {
     private $apiKey = "";
@@ -30,7 +30,7 @@ class ChatBackend {
             error_log('JSON encode error: ' . json_last_error_msg());
             $jsonResponse = json_encode([
                 'status' => 'error',
-                'message' => 'JSON编码错误'
+                'message' => 'JSON encoding error'
             ]);
         }
 
@@ -52,41 +52,41 @@ class ChatBackend {
         }
 
         $file = $_FILES['file'];
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            throw new Exception("文件上传失败");
-        }
+if ($file['error'] !== UPLOAD_ERR_OK) {
+    throw new Exception("File upload failed");
+}
 
-        // 添加文件大小限制 (10MB)
-        $maxFileSize = 10 * 1024 * 1024; // 10MB in bytes
-        if ($file['size'] > $maxFileSize) {
-            throw new Exception("文件大小超过限制（最大10MB）");
-        }
+// Add file size limit (10MB)
+$maxFileSize = 10 * 1024 * 1024; // 10MB in bytes
+if ($file['size'] > $maxFileSize) {
+    throw new Exception("File size exceeds limit (max 10MB)");
+}
 
-        // 验证文件类型
-        $allowedTypes = ['application/pdf', 'text/plain'];
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mimeType = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
+// Validate file type
+$allowedTypes = ['application/pdf', 'text/plain'];
+$finfo = finfo_open(FILEINFO_MIME_TYPE);
+$mimeType = finfo_file($finfo, $file['tmp_name']);
+finfo_close($finfo);
 
-        if (!in_array($mimeType, $allowedTypes)) {
-            throw new Exception("不支持的文件类型（仅支持PDF和TXT）");
-        }
+if (!in_array($mimeType, $allowedTypes)) {
+    throw new Exception("Unsupported file type (only PDF and TXT allowed)");
+}
 
-        $fileName = uniqid() . '_' . basename($file['name']);
-        $targetPath = $this->uploadDir . $fileName;
+$fileName = uniqid() . '_' . basename($file['name']);
+$targetPath = $this->uploadDir . $fileName;
 
-        if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-            // 如果是PDF文件，使用PDF处理类
-            if ($mimeType === 'application/pdf') {
-                $processor = new LightPDFProcessor($targetPath);
-                return $processor->generateSummary();
-            }
-            // 如果是文本文件，直接返回上传成功消息
-            return "文件 {$fileName} 上传成功。请问有什么需要我帮助的吗？";
-        }
-
-        throw new Exception("文件保存失败");
+if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+    // If it's a PDF file, use the PDF processor class
+    if ($mimeType === 'application/pdf') {
+        $processor = new LightPDFProcessor($targetPath);
+        return $processor->generateSummary();
     }
+    // If it's a text file, return upload success message directly
+    return "File {$fileName} uploaded successfully. How can I assist you further?";
+}
+
+throw new Exception("Failed to save file");
+}
 
     private function generateAIResponse($message) {
         try {
@@ -103,106 +103,105 @@ class ChatBackend {
 
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_POST => true,
-                CURLOPT_HTTPHEADER => [
+                CURLOPT_POST        => true,
+                CURLOPT_HTTPHEADER  => [
                     "Content-Type: application/json",
                     "Authorization: Bearer " . $this->apiKey
                 ],
-                CURLOPT_POSTFIELDS => json_encode($data),
-                CURLOPT_SSL_VERIFYPEER => false // 添加这行以处理可能的SSL问题
+                CURLOPT_POSTFIELDS     => json_encode($data),
+                CURLOPT_SSL_VERIFYPEER => false // Add this line to handle potential SSL issues
             ]);
-
+            
             $response = curl_exec($ch);
-
+            
             if (curl_errno($ch)) {
                 error_log('Curl error: ' . curl_error($ch));
-                throw new Exception("API请求失败: " . curl_error($ch));
+                throw new Exception("API request failed: " . curl_error($ch));
             }
-
+            
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
-
+            
             if ($httpCode !== 200) {
                 error_log('API returned non-200 status code: ' . $httpCode . ', Response: ' . $response);
-                throw new Exception("API返回错误状态码: " . $httpCode);
+                throw new Exception("API returned error status code: " . $httpCode);
             }
-
+            
             if (empty($response)) {
                 error_log('Empty response from API');
-                throw new Exception("API返回空响应");
+                throw new Exception("API returned an empty response");
             }
-
-            error_log('API Response: ' . $response); // 记录API响应
-
+            
+            error_log('API Response: ' . $response); // Log the API response
+            
             $result = json_decode($response, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
                 error_log('JSON decode error: ' . json_last_error_msg());
-                throw new Exception("API响应解析失败: " . json_last_error_msg());
+                throw new Exception("Failed to parse API response: " . json_last_error_msg());
             }
-
+            
             if (!isset($result['choices'][0]['message']['content'])) {
                 error_log('Invalid API response structure: ' . print_r($result, true));
-                throw new Exception("API响应格式错误");
+                throw new Exception("API response format error");
             }
-
+            
             return $result['choices'][0]['message']['content'];
-        } catch (Exception $e) {
-            error_log('Generate AI Response error: ' . $e->getMessage());
-            throw new Exception("生成回复失败: " . $e->getMessage());
+            } catch (Exception $e) {
+                error_log('Generate AI Response error: ' . $e->getMessage());
+                throw new Exception("Failed to generate response: " . $e->getMessage());
         }
     }
 
     public function handleRequest() {
         try {
-            // 获取输入数据
+            // Get input data
             $rawInput = file_get_contents('php://input');
             if (empty($rawInput)) {
-                throw new Exception("没有接收到输入数据");
+                throw new Exception("No input data received");
             }
-
+    
             $input = json_decode($rawInput, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new Exception("JSON解析错误: " . json_last_error_msg());
+                throw new Exception("JSON parse error: " . json_last_error_msg());
             }
-
+    
             $message = isset($input['message']) ? trim($input['message']) : '';
             if (empty($message)) {
-                throw new Exception("消息不能为空");
+                throw new Exception("Message cannot be empty");
             }
-
-            // 处理文件上传
+    
+            // Handle file upload
             $fileResponse = $this->handleFileUpload();
             if ($fileResponse) {
                 $this->sendJsonResponse([
                     'status' => 'success',
-                    'reply' => $fileResponse
+                    'reply'  => $fileResponse
                 ]);
                 return;
             }
-
-            // 生成AI响应
+    
+            // Generate AI response
             $reply = $this->generateAIResponse($message);
-
-            // 返回成功响应
+    
+            // Return successful response
             $this->sendJsonResponse([
                 'status' => 'success',
-                'reply' => $reply
+                'reply'  => $reply
             ]);
-
+    
         } catch (Exception $e) {
             $this->handleError($e->getMessage());
         }
     }
 }
-
-// 实例化并处理请求
+    // Instantiate and handle request
 try {
-    $chatBackend = new ChatBackend();
-    $chatBackend->handleRequest();
-} catch (Exception $e) {
-    header('Content-Type: application/json');
-    echo json_encode([
-        'status' => 'error',
-        'message' => '系统错误: ' . $e->getMessage()
-    ]);
-}
+        $chatBackend = new ChatBackend();
+        $chatBackend->handleRequest();
+    } catch (Exception $e) {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'status'  => 'error',
+            'message' => 'System error: ' . $e->getMessage()
+        ]);
+    }

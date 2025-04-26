@@ -2,49 +2,49 @@
 session_start();
 $lang = $_GET['lang'] 
       ?? ($_COOKIE['lang'] ?? 'zh');
-// 2. 白名单校验
+// Whitelist verification
 $lang = in_array($lang, ['zh','en']) 
       ? $lang 
       : 'zh';
-// 3. 写入 Cookie（30 天）
+// Write cookies (30 days)
 setcookie('lang', $lang, time() + 86400 * 30, '/');
-// 4. 加载对应语言包
+// Load the corresponding language pack
 $T = json_decode(
     file_get_contents(__DIR__ . "/lang/{$lang}.json"),
     true
 ) ?: [];
-// 5. 翻译函数
+// Translation function
 function t($key) {
     global $T;
     return $T[$key] ?? $key;
 }
-// 详细的会话调试信息
-error_log("========== 会话调试信息 ==========");
+// Detailed session debugging information
+error_log("========== Session debugging information ==========");
 error_log("Session ID: " . session_id());
-error_log("所有会话变量: " . print_r($_SESSION, true));
-error_log("Cookie信息: " . print_r($_COOKIE, true));
+error_log("All session variables: " . print_r($_SESSION, true));
+error_log("Cookie information: " . print_r($_COOKIE, true));
 error_log("=================================");
 
-// 检查用户是否已登录
+// Check whether the user has logged in
 if (!isset($_SESSION['user_id'])) {
-    error_log("警告：用户未登录，重定向到登录页面");
+    error_log("Warning: The user is not logged in. Redirect to the login page");
     header('Location: user_login.php');
     exit();
 }
 
-// 获取并验证用户信息
+// Obtain and verify user information
 $user_id = $_SESSION['user_id'];
 $username = $_SESSION['username'] ?? 'unknown';
 
-// 记录用户信息
-error_log("当前用户信息：");
-error_log("- 用户ID: " . $user_id);
-error_log("- 用户名: " . $username);
+// Record user information
+error_log("Current user information：");
+error_log("- userid: " . $user_id);
+error_log("- username: " . $username);
 
 $conversation_id = isset($_SESSION['current_conversation_id']) ? $_SESSION['current_conversation_id'] : null;
-error_log("当前对话ID: " . ($conversation_id ?? 'null'));
+error_log("Current dialogue ID: " . ($conversation_id ?? 'null'));
 
-// 如果没有当前对话ID，获取用户最新的对话
+// If there is no current conversation ID, obtain the user's latest conversation
 if (!$conversation_id && $user_id) {
     require 'DatabaseHelper.php';
     $db = new DatabaseHelper();
@@ -58,14 +58,14 @@ if (!$conversation_id && $user_id) {
             $_SESSION['current_conversation_id'] = $conversation_id;
         }
     } catch (Exception $e) {
-        error_log("获取最新对话失败: " . $e->getMessage());
+        error_log("Failed to obtain the latest conversation: " . $e->getMessage());
     }
 }
 
-// 记录会话信息
-error_log("当前会话状态 - 用户ID: $user_id, 对话ID: " . ($conversation_id ?? 'null'));
+// Record the conversation information
+error_log(" Current session state - User ID: $user_id, dialogue ID: ". ($conversation_id?? 'null'));
 
-// 接收从Main Page传来的消息
+// Receive the messages sent from the Main Page
 $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']) : '';
 ?>
 
@@ -74,9 +74,9 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deepchat AI对话界面</title>
+    <title>Deepchat AI Dialog Interface</title>
     <script>
-  // 把 PHP 里的 $T 语言数组暴露给 JS
+  // Expose the $T language array in PHP to JS
   window.i18n = <?= json_encode($T, JSON_UNESCAPED_UNICODE) ?>;
   function tjs(key) { return window.i18n[key] || key; }
     </script>
@@ -736,15 +736,31 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
             font-size: 13px;
             text-align: center;
         }
+
+        .feature-button.logout {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            margin-top: auto;
+            margin-bottom: 20px;
+        }
+
+        .feature-button.logout:hover {
+            background-color: #e60000;
+        }
+
+        .feature-button.logout i {
+            color: white;
+        }
     </style>
 </head>
 <body>
     <div class="container">
     <div class="sidebar">
-    <!-- 品牌 -->
+    <!-- brand -->
     <div class="brand"><?= t('brand_name') ?></div>
 
-    <!-- 语言切换 -->
+    <!-- language switch -->
     <div class="lang-switch" style="margin: 10px 0; text-align: center;">
         <select id="langSwitch">
             <option value="zh" <?= $lang==='zh'?'selected':'' ?>>中文</option>
@@ -752,7 +768,7 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
         </select>
     </div>
 
-    <!-- 搜索框 -->
+    <!-- search-box -->
     <div class="search-box">
         <i class="search-icon">🔍</i>
         <input type="text"
@@ -762,12 +778,12 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
         <div class="search-results" id="searchResults"></div>
     </div>
 
-    <!-- 功能按钮 -->
+    <!-- feature-button -->
     <div class="feature-button" id="newChatButton">
         <i>✚</i> <?= t('button_new_chat') ?>
     </div>
     <div class="conversations-list" id="conversationsList">
-        <!-- 对话列表动态加载 -->
+        <!-- conversations-list -->
     </div>
     <div class="feature-button" id="clearChatButton">
         <i>🗑</i> <?= t('button_clear_chat') ?>
@@ -788,10 +804,15 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
         <i>🔄</i> <?= t('button_test_api') ?>
     </div>
 
-    <!-- 页脚信息 -->
+    <!-- footer -->
     <div class="footer">
         <?= t('footer_powered') ?><br>
         <?= t('footer_version') ?>
+    </div>
+
+    <!-- logout button -->
+    <div class="feature-button" id="logoutButton" style="margin-top: auto; margin-bottom: 20px;">
+        <i>🚪</i> <?= t('button_logout') ?>
     </div>
 </div>
 
@@ -836,7 +857,7 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
         </div>
     </div>
 
-    <!-- 配置模态框 -->
+    <!-- Configure the modal box -->
     <div class="modal" id="configModal">
         <div class="modal-content">
             <div class="close-modal" id="closeConfigModal">&times;</div>
@@ -866,7 +887,7 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
         </div>
     </div>
 
-    <!-- 测试结果模态框 -->
+    <!-- Test Result modal box -->
     <div class="modal" id="testResultModal">
         <div class="modal-content">
             <div class="close-modal" id="closeTestResultModal">&times;</div>
@@ -876,7 +897,7 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
     </div>
 
     <script>
-        // 配置变量
+        // Configuration variable
         let config = {
             apiKey: localStorage.getItem('apiKey') || '',
             apiBaseUrl: localStorage.getItem('apiBaseUrl') || 'http://127.0.0.1:8000',
@@ -887,7 +908,7 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
             conversationId: <?php echo $conversation_id ? json_encode($conversation_id) : 'null'; ?>
         };
 
-        // 全局变量
+        // Global variable
         let activeWs = null;
         let currentTaskId = null;
         let lastBotMessage = null;
@@ -895,7 +916,7 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
         let pendingFile = null;
         let isInitialized = false;
 
-        // DOM元素
+        // DOM element
         const chatBox = document.getElementById('chatBox');
         const messageInput = document.getElementById('messageInput');
         const sendButton = document.getElementById('sendButton');
@@ -925,7 +946,7 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
         const searchInput = document.getElementById('searchInput');
         const finishedTasks = new Set();
 
-        // 检查服务器连接
+        // chech service connection
         async function checkServerConnection() {
             try {
                 const response = await fetch(`${config.apiBaseUrl}/api/ping`, {
@@ -934,26 +955,26 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                 });
 
                 if (response.ok) {
-                    console.log('服务器连接正常');
+                    console.log('The server connection is normal.');
                     return true;
                 } else {
-                    console.error('服务器连接异常:', response.status);
+                    console.error('Server connection anomaly:', response.status);
                     return false;
                 }
             } catch (error) {
-                console.error('服务器连接失败:', error);
+                console.error('Server connection failed:', error);
                 return false;
             }
         }
 
-        // 初始化
+        // Initialization
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('页面加载，检查配置状态：');
-            console.log('用户ID:', config.userId);
-            console.log('当前对话ID:', config.conversationId);
-            console.log('PHP会话ID:', '<?php echo session_id(); ?>');
+            console.log('Page loading and checking the configuration status：');
+            console.log('User ID:', config.userId);
+            console.log('Current Dialog ID:', config.conversationId);
+            console.log('PHP Dialog ID:', '<?php echo session_id(); ?>');
 
-            // 重置状态
+            // Reset Status
             chatBox.innerHTML = '';
             chatHistory = [];
             lastBotMessage = null;
@@ -964,20 +985,20 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
             }
 
             if (!config.userId) {
-                console.error('未找到用户ID，重定向到登录页面');
+                console.error('The user ID was not found. Redirect to the login page');
                 window.location.href = 'user_login.php';
                 return;
             }
 
-            // 验证当前对话ID是否属于当前用户
+            // Verify whether the current dialogue ID belongs to the current user
             if (config.conversationId) {
                 try {
                     const response = await fetch(`db_verify_conversation.php?conversation_id=${config.conversationId}&user_id=${config.userId}`);
                     const result = await response.json();
                     if (!result.valid) {
-                        console.error('当前对话不属于该用户，重置对话ID');
+                        console.error('The current conversation does not belong to this user. Reset the conversation ID');
                         config.conversationId = null;
-                        // 更新会话状态
+                        // Update the session status
                         await fetch('update_session.php', {
                             method: 'POST',
                             headers: {
@@ -989,37 +1010,37 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                         });
                     }
                 } catch (error) {
-                    console.error('验证对话所有权失败:', error);
+                    console.error('The verification of dialogue ownership failed:', error);
                     config.conversationId = null;
                 }
             }
 
-            // 首先加载对话列表
+            // First, load the list of conversations
             await loadConversations();
 
-            // 如果有当前对话ID，加载对话历史
+            // If there is a current dialogue ID, load the dialogue history
             if (config.conversationId) {
                 await loadChatHistory();
             } else {
-                // 如果没有当前对话，显示欢迎消息，不保存到数据库
+                // If there is no current conversation, display a welcome message and do not save it to the database
                 addMessageToChat('system', '<?= t('chat_welcome') ?>', false, false);
             }
 
-            // 填充配置表单
+            // Fill in the configuration form
             apiKeyInput.value = config.apiKey;
             apiBaseUrlInput.value = config.apiBaseUrl;
             wsBaseUrlInput.value = config.wsBaseUrl;
             modelNameInput.value = config.modelName;
 
-            // 设置事件监听器
+            // Set the event listener
             setupEventListeners();
             
             isInitialized = true;
         });
 
-        // 设置事件监听器
+        // Set the event listener
         function setupEventListeners() {
-            // 移除现有的事件监听器（如果有的话）
+            // Remove the existing event listeners (if any)
             sendButton.removeEventListener('click', sendMessage);
             fileInput.removeEventListener('change', handleFileChange);
             uploadButton.removeEventListener('click', () => fileInput.click());
@@ -1038,7 +1059,7 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
             searchInput.removeEventListener('input', () => searchConversations(searchInput.value));
             document.removeEventListener('click', handleClickOutside);
 
-            // 添加新的事件监听器
+            // Add a new event listener
             sendButton.addEventListener('click', sendMessage);
             fileInput.addEventListener('change', handleFileChange);
             uploadButton.addEventListener('click', () => fileInput.click());
@@ -1057,11 +1078,11 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
             searchInput.addEventListener('input', () => searchConversations(searchInput.value));
             document.addEventListener('click', handleClickOutside);
 
-            // 文件拖放区域事件
+            // Set the file drag-and-drop area event
             setupFileDropArea();
         }
 
-        // 设置文件拖放区域事件
+        // Set the file drag-and-drop area event
         function setupFileDropArea() {
             fileDropArea.addEventListener('dragover', (e) => {
                 e.preventDefault();
@@ -1087,7 +1108,7 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
             });
         }
 
-        // 加载聊天历史
+        // Load the chat history
         async function loadChatHistory() {
             if (!config.conversationId) return;
 
@@ -1095,38 +1116,38 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                 const response = await fetch(`db_get_messages.php?conversation_id=${config.conversationId}`);
                 const messages = await response.json();
 
-                // 清空聊天框和历史记录
+                // Clear the chat box and history records
                 chatBox.innerHTML = '';
                 chatHistory = [];
 
                 if (messages.length === 0) {
-                    // 如果没有历史消息，显示欢迎消息
+                    // If there is no historical message, display the welcome message
                     addMessageToChat('system', '<?= t('chat_welcome') ?>', false, false);
                     return;
                 }
 
-                // 添加历史消息到聊天框，设置shouldSaveToDb为false
+                // Add historical messages to the chat box and set shouldSaveToDb to false
                 messages.forEach(msg => {
                     const type = msg.role === 'assistant' ? 'bot' : msg.role;
-                    addMessageToChat(type, msg.content, false, false); // 最后一个参数false表示不保存到数据库
+                    addMessageToChat(type, msg.content, false, false); // The last parameter, false, indicates that it is not saved to the database
                     chatHistory.push({type: type, content: msg.content});
                 });
 
-                // 如果有机器人消息，保存最后一条
+                // If there are robot messages, save the last one
                 const botMessages = messages.filter(msg => msg.role === 'assistant');
                 if (botMessages.length > 0) {
                     lastBotMessage = botMessages[botMessages.length - 1].content;
                 }
             } catch (error) {
-                console.error('加载聊天历史失败:', error);
+                console.error('Failed to load the chat history:', error);
                 addMessageToChat('system', '<?= t('fail_to_reload_history') ?>', true, false);
             }
         }
 
-        // 发送消息
+        // Send message
         async function sendMessage() {
             if (!isInitialized) {
-                console.error('系统未完成初始化');
+                console.error('The system has not completed initialization');
                 addMessageToChat('system', '<?= t('system_initialization') ?>', true);
                 return;
             }
@@ -1134,35 +1155,35 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
             const message = messageInput.value.trim();
             if (!message) return;
 
-            // 禁用发送按钮，防止重复发送
+            // Disable the send button to prevent duplicate sending
             sendButton.disabled = true;
             
             try {
-                // 检查用户ID
+                // Chech user ID
                 if (!config.userId) {
-                    console.error('用户ID未设置');
+                    console.error('The user ID has not been set');
                     addMessageToChat('system', '<?= t('chat_expired') ?>', true);
                     window.location.href = 'user_login.php';
                     return;
                 }
 
-                // 首先检查服务器连接
+                // First, check the server connection
                 if (!await checkServerConnection()) {
                     addMessageToChat('system', '<?= t('unable_connect') ?>', true);
                     return;
                 }
 
-                // 添加用户消息到聊天界面
+                // Add user messages to the chat interface
                 addMessageToChat('user', message);
 
-                // 清空输入框并重置高度
+                // Empty the input box and reset the height
                 messageInput.value = '';
                 messageInput.style.height = 'auto';
 
                 try {
-                    // 如果没有当前对话，先创建新对话
+                    // If there is no current conversation, create a new one first
                     if (!config.conversationId) {
-                        console.log('创建新对话...');
+                        console.log('Creating new conversation...');
                         
                         const createResponse = await fetch('db_start_conversation.php', {
                             method: 'POST',
@@ -1176,16 +1197,16 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                         });
 
                         const createResult = await createResponse.json();
-                        console.log('创建对话响应:', createResult);
+                        console.log('Create a conversation response:', createResult);
 
                         if (createResult.status !== 'success' || !createResult.conversation_id) {
-                            throw new Error(createResult.message || '创建对话失败');
+                            throw new Error(createResult.message || 'Create conversation failed');
                         }
 
                         config.conversationId = createResult.conversation_id;
-                        console.log('新对话ID:', config.conversationId);
+                        console.log('new conversation id:', config.conversationId);
 
-                        // 更新会话ID到PHP会话
+                        // Update the session ID to the PHP session
                         await fetch('update_session.php', {
                             method: 'POST',
                             headers: {
@@ -1196,20 +1217,20 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                             })
                         });
 
-                        // 创建新的对话按钮
+                        // Create a new dialogue button
                         await updateConversationsList(createResult.conversation_id, message.substring(0, 50));
                     }
 
-                    // 获取最近的四条消息
+                    // Get the latest four pieces of news
                     const messagesResponse = await fetch(`db_get_messages.php?conversation_id=${config.conversationId}`);
                     const messages = await messagesResponse.json();
                     const recentMessages = messages.slice(-4).map(msg => msg.content).join('\n');
                     
-                    // 组合最近消息和新消息
-                    const combinedMessage = recentMessages ? `${recentMessages}\n\n新问题：${message}` : message;
+                    // Combine the latest news and new news
+                    const combinedMessage = recentMessages ? `${recentMessages}\n\n new question：${message}` : message;
 
-                    // 保存用户消息到数据库
-                    console.log('保存消息到数据库:', {
+                    // Save user messages to the database
+                    console.log('Save messages to the database:', {
                         conversation_id: config.conversationId,
                         role: 'user',
                         content: message
@@ -1228,29 +1249,29 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                     });
 
                     const saveResult = await saveResponse.json();
-                    console.log('保存消息响应:', saveResult);
+                    console.log('Save the message response:', saveResult);
 
                     if (saveResult.status !== 'success') {
-                        throw new Error(saveResult.message || '保存消息失败');
+                        throw new Error(saveResult.message || 'Failed to save the message');
                     }
 
-                    // 显示"正在输入"指示器
+                    // Display the "Inputting" indicator
                     typingIndicator.style.display = 'block';
                     stopThinkingButton.style.display = 'inline-block';
 
-                    // 生成任务ID并调用API
+                    // Generate the task ID and call the API
                     const taskId = generateUUID();
                     currentTaskId = taskId;
-                    console.log(`生成新任务ID: ${taskId}`);
+                    console.log(`Generate a new task ID: ${taskId}`);
 
-                    // 创建WebSocket连接
+                    // Create a WebSocket connection
                     createWebSocketConnection(taskId);
 
-                    // 等待确保WebSocket连接已建立
+                    // Wait to ensure that the WebSocket connection has been established
                     await new Promise(resolve => setTimeout(resolve, 500));
 
-                    // 发送聊天消息到API
-                    console.log(`发送消息到API, 任务ID: ${taskId}`);
+                    // Send chat messages to the API
+                    console.log(`Send a message to the API, task ID: ${taskId}`);
                     const response = await fetch(`${config.apiBaseUrl}/api/chat`, {
                         method: 'POST',
                         headers: {
@@ -1263,41 +1284,41 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                     });
 
                     if (!response.ok) {
-                        throw new Error(`API错误: ${response.status}`);
+                        throw new Error(`API error: ${response.status}`);
                     }
 
                     const result = await response.json();
-                    console.log(`API响应成功: ${JSON.stringify(result)}`);
+                    console.log(`The API response was successful.: ${JSON.stringify(result)}`);
 
                 } catch (error) {
-                    console.error('发送消息失败:', error);
+                    console.error('Send message failed:', error);
                     addMessageToChat('system', `<?= t('fault') ?>: ${error.message}`, true);
                     typingIndicator.style.display = 'none';
                     stopThinkingButton.style.display = 'none';
                 }
             } finally {
-                // 重新启用发送按钮
+                // Re-enable the send button
                 sendButton.disabled = false;
             }
         }
 
-        // 更新对话列表
+        // Update Conversations List
         async function updateConversationsList(conversationId, title) {
             const conversationsList = document.getElementById('conversationsList');
             
-            // 移除"没有历史对话"的提示
+            // Remove the prompt "No historical Dialogue"
             const emptyMessage = conversationsList.querySelector('.empty-conversations-message');
             if (emptyMessage) {
                 emptyMessage.remove();
             }
 
-            // 创建新的对话项
+            // Create a new dialogue item
             const item = document.createElement('div');
             item.className = 'conversation-item active';
             
             const titleDiv = document.createElement('div');
             titleDiv.className = 'conversation-title';
-            titleDiv.textContent = title || '新对话';
+            titleDiv.textContent = title || 'New Conversation';
             titleDiv.dataset.id = conversationId;
             
             const deleteBtn = document.createElement('span');
@@ -1312,12 +1333,12 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
             item.appendChild(deleteBtn);
             item.onclick = () => switchConversation(conversationId);
             
-            // 移除其他对话的active类
+            // Remove the active class of other conversations
             document.querySelectorAll('.conversation-item').forEach(item => {
                 item.classList.remove('active');
             });
             
-            // 将新对话添加到列表最前面
+            // Add the new conversation to the top of the list
             if (conversationsList.firstChild) {
                 conversationsList.insertBefore(item, conversationsList.firstChild);
             } else {
@@ -1325,57 +1346,57 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
             }
         }
 
-        // 创建WebSocket连接
+        // Create a WebSocket connection
         function createWebSocketConnection(taskId) {
-            // 关闭之前的连接
+            // Close the previous connection
             if (activeWs) {
                 activeWs.close();
                 activeWs = null;
             }
 
-            // 创建新连接
+            // Create a new connection
             const ws = new WebSocket(`${config.wsBaseUrl}/ws/${taskId}`);
             activeWs = ws;
 
             ws.onopen = () => {
-                console.log(`WebSocket连接已打开: ${taskId}`);
+                console.log(`The WebSocket connection has been opened: ${taskId}`);
             };
 
             ws.onmessage = async (event) => {
                 const data = JSON.parse(event.data);
-                console.log('WebSocket消息:', data);
+                console.log('WebSocket message:', data);
 
-                if (data.status === '完成' && data.reply) {
-                    // 收到完整回复
+                if (data.status === 'Done' && data.reply) {
+                    // Received a complete reply
                     if (finishedTasks.has(taskId)) return;
                     typingIndicator.style.display = 'none';
                     stopThinkingButton.style.display = 'none';
                     
-                    // 显示AI回复，设置shouldSaveToDb为true因为这是新消息
+                    // To display the AI reply, set shouldSaveToDb to true because this is a new message
                     addMessageToChat('bot', data.reply, false, true);
                     finishedTasks.add(taskId);
                     
-                    // 更新对话列表
+                    // Update the dialogue list
                     await loadConversations();
                 } else if (data.type === 'connection_status') {
-                    // 处理连接状态消息
-                    console.log(`连接状态: ${data.status} - ${data.task_id}`);
-                } else if (data.status && data.progress !== undefined) {
-                    // 进度更新
-                    console.log(`任务进度: ${data.progress}% - ${data.status}`);
+                    // Handle the connection status message
+                    console.log(`Connection Status: ${data.status} - ${data.task_id}`);
+                } else if (data.status && data.progress !== undefined) {8
+                    // Progress update
+                    console.log(`progress status: ${data.progress}% - ${data.status}`);
 
-                    // 处理PDF特殊消息
+                    // Handle special messages in PDFS
                     if (data.message && data.status.includes("PDF")) {
-                        // 显示PDF处理状态消息
+                        // Display the PDF processing status message
                         const existingMessage = document.querySelector('.system-message.pdf-processing');
                         if (existingMessage) {
-                            // 更新现有消息
+                            // Update the existing messages
                             const contentElem = existingMessage.querySelector('.message-content');
                             if (contentElem) {
                                 contentElem.textContent = data.message;
                             }
                         } else {
-                            // 创建新消息
+                            // Create new message
                             const messageElem = document.createElement('div');
                             messageElem.className = 'system-message pdf-processing';
 
@@ -1389,78 +1410,78 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                         }
                     }
                 } else if (data.error) {
-                    // 处理错误
+                    // Handle errors
                     typingIndicator.style.display = 'none';
                     stopThinkingButton.style.display = 'none';
                     addMessageToChat('system', `<?= t('fault') ?>: ${data.error}`, true);
                 } else if (data.status && (data.type === 'pdf' || data.type === 'pdf_error' || data.type === 'pdf_timeout' || data.type === 'pdf_unsupported')) {
-                    // 处理PDF文件响应
-                    console.log('收到PDF处理结果:', data);
+                    // Handle PDF file responses
+                    console.log('Received PDF processing result:', data);
                     typingIndicator.style.display = 'none';
                     stopThinkingButton.style.display = 'none';
 
-                    // 根据PDF处理的不同状态显示不同消息
+                    // Display different messages according to the different states of PDF processing
                     if (data.type === 'pdf_timeout') {
-                        // PDF处理超时，显示友好的提示
+                        // PDF processing timeout, display friendly prompt
                         addMessageToChat('system', data.content);
                         addMessageToChat('system', '<?= t('continue_deal') ?>', false);
                     } else if (data.type === 'pdf_error') {
-                        // PDF处理出错，显示友好的提示而不是错误
+                        // There was an error in the PDF processing. Display friendly prompts instead of errors
                         addMessageToChat('system', data.content);
                     } else if (data.type === 'pdf_unsupported') {
-                        // PDF不支持，正常显示消息
+                        // PDF is not supported. Messages are displayed normally
                         addMessageToChat('system', data.content);
                     } else {
-                        // 正常处理的PDF内容
-                        addMessageToChat('system', `已上传: ${data.file_name}`);
-                        // 检查content是否存在并且不为空
+                        //  Normally processed PDF content
+                        addMessageToChat('system', `Uploaded: ${data.file_name}`);
+                        // Check whether the content exists and is not empty
                         if (data.content && data.content.trim() !== '') {
-                            console.log('添加PDF内容到聊天, 长度:', data.content.length);
+                            console.log('Add PDF content to chat, length:', data.content.length);
                             addMessageToChat('bot', data.content);
                         } else {
-                            console.error('PDF内容为空或不存在');
+                            console.error('The PDF content is empty or does not exist');
                             addMessageToChat('system', '<?= t('unable_display') ?>', true);
                         }
                     }
 
-                    // 移除之前的PDF处理消息
+                    // Remove the previous PDF processing message
                     const pdfProcessingMsg = document.querySelector('.system-message.pdf-processing');
                     if (pdfProcessingMsg) {
                         pdfProcessingMsg.remove();
                     }
                 } else {
-                    // 未处理的消息类型，记录以便调试
-                    console.log('未处理的WebSocket消息类型:', data);
+                    // Unprocessed message types, recorded for debugging
+                    console.log('Unprocessed WebSocket message types:', data);
                 }
             };
 
             ws.onerror = (error) => {
-                console.error('WebSocket错误:', error);
-                // 不要立即显示错误，而是尝试重新连接
-                console.log('尝试通过API获取结果...');
+                console.error('WebSocket error:', error);
+                // Don't display the error immediately. Instead, try to reconnect
+                console.log('Try to obtain the result through the API...');
                 setTimeout(() => retrieveResult(taskId), 1000);
             };
 
             ws.onclose = (event) => {
-                console.log(`WebSocket连接已关闭, 代码: ${event.code}, 原因: ${event.reason}`);
+                console.log(`WebSocket Connection Closed, code: ${event.code}, reason: ${event.reason}`);
                 if (activeWs === ws) {
                     activeWs = null;
                 }
 
-                // 如果连接过早关闭且没有收到任何回复，尝试重新连接或获取结果
+                // If the connection is closed too early and no response is received, try reconnecting or getting the result
                 if (typingIndicator.style.display === 'block') {
-                    console.log(`WebSocket连接已关闭但任务可能仍在进行, 尝试重新连接或获取结果...`);
+                    console.log(`The WebSocket connection has been closed but the task may still be ongoing. Try to reconnect or obtain the result...`);
 
-                    // 先尝试重新连接WebSocket
+                    // Try reconnecting the WebSocket first
                     setTimeout(() => {
                         if (typingIndicator.style.display === 'block') {
-                            console.log(`尝试重新连接WebSocket: ${taskId}`);
+                            console.log(`Try reconnecting the WebSocket: ${taskId}`);
                             createWebSocketConnection(taskId);
 
-                            // 如果重连后短时间内仍无结果，尝试通过API获取
+                            // If there is still no result within a short period after reconnection, try to obtain it through the API
                             setTimeout(() => {
                                 if (typingIndicator.style.display === 'block') {
-                                    console.log('WebSocket重连后仍无回复，尝试通过API获取结果...');
+                                    console.log('After reconnecting with WebSocket, there was still no response. I attempted to obtain the result through the API...');
                                     if (!finishedTasks.has(taskId)) retrieveResult(taskId);
                                 }
                             }, 3000);
@@ -1469,76 +1490,76 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                 }
             };
 
-            // 增加ping来保持连接活跃
+            // Increase ping to keep the connection active
             const pingInterval = setInterval(() => {
                 if (ws.readyState === WebSocket.OPEN) {
-                    console.log('发送ping来保持连接');
+                    console.log('Send ping to maintain connection');
                     ws.send(JSON.stringify({type: 'ping'}));
                 } else {
                     clearInterval(pingInterval);
                 }
-            }, 30000); // 每30秒ping一次
+            }, 30000); // ping once every 30 seconds
 
             return ws;
         }
 
-        // 通过API获取任务结果
+        // Obtain the task results through the API
         async function retrieveResult(taskId) {
             try {
-                // === 防抖：一旦开始请求就立即标记，避免并发调用 ===;
+                // === Anti-shake: Mark immediately once a request begins to avoid concurrent calls ===;
                 if (finishedTasks.has(taskId)) return;
                 finishedTasks.add(taskId);
                 console.log(`[RESULT] pull ${taskId}`);
                 const response = await fetch(`${config.apiBaseUrl}/api/result/${taskId}`);
 
                 if (!response.ok) {
-                    throw new Error(`API错误: ${response.status}`);
+                    throw new Error(`API error: ${response.status}`);
                 }
 
                 const result = await response.json();
-                console.log(`获取到任务结果:`, result);
+                console.log(`Obtain the task result:`, result);
 
-                // 隐藏加载指示器
+                // Hidden loading indicator
                 typingIndicator.style.display = 'none';
                 stopThinkingButton.style.display = 'none';
 
-                // 检查是否是PDF结果
+                // Check if it is a PDF results
                 if (result.type && (result.type === 'pdf' || result.type.startsWith('pdf_'))) {
-                    console.log('通过API获取到PDF结果');
-                    // 使用PDF显示函数
+                    console.log('The PDF result was obtained through the API');
+                    // Use the PDF display function
                     displayPdfResult(result);
                     return;
                 }
 
-                // 处理普通文本回复
+                // Handle ordinary text responses
                 if (result.reply) {
-                    // 收到有效回复
+                    // Received a valid reply
                     addMessageToChat('bot', result.reply);
-                    console.log('通过API成功获取到回复');
+                    console.log('The reply was successfully obtained through the API');
 
                 } else if (result.content) {
-                    // 内容字段中可能包含结果
+                    // The content field may contain the result
                     addMessageToChat('bot', result.content);
-                    console.log('通过API成功获取到内容');
+                    console.log('The content was successfully obtained through the API');
                 } else {
-                    // 结果格式不正确
+                    // The result format is incorrect
                     addMessageToChat('system', '<?= t('fail_to_replay') ?>', true);
                 }
             } catch (error) {
                 finishedTasks.delete(taskId);
-                console.error('获取结果失败:', error);
+                console.error('Getting result failed:', error);
                 typingIndicator.style.display = 'none';
                 stopThinkingButton.style.display = 'none';
                 addMessageToChat('system', `Fail to get result: ${error.message}`, true);
             }
         }
 
-        // 处理文件上传
+        // Handle File Upload
         async function handleFileChange() {
             const file = fileInput.files[0];
             if (!file) return;
 
-            // 文件类型检查
+            // File type check
             const validTypes = [
                 'application/pdf',
                 'text/plain',
@@ -1555,141 +1576,141 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                 return;
             }
 
-            // 文件大小检查 (10MB)
+            // File size check (10MB)
             if (file.size > 10 * 1024 * 1024) {
                 addMessageToChat('system', '<?= t('file_too_large') ?>', true);
                 return;
             }
 
-            // 首先检查服务器连接
+            // Check server connection
             if (!await checkServerConnection()) {
                 addMessageToChat('system', '<?= t('check_server') ?>', true);
                 return;
             }
 
-            // 显示上传中消息
+            // Display the message being uploaded
             addMessageToChat('system', `<?= t('upload_file') ?>: ${file.name}...`);
 
-            // 如果是PDF文件，显示特殊提示
+            // If it is a PDF file, special prompts will be displayed
             if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
                 addMessageToChat('system', '<?= t('note_wait_time') ?>');
             }
 
-            // 显示"正在输入"指示器
+            // Display the "Inputting" indicator
             typingIndicator.style.display = 'block';
             stopThinkingButton.style.display = 'inline-block';
 
             try {
-                // 生成任务ID
+                // generate task ID
                 const taskId = generateUUID();
                 currentTaskId = taskId;
-                console.log(`生成新任务ID: ${taskId} (文件上传)`);
+                console.log(`generate new task ID: ${taskId} (file upload)`);
 
-                // 创建WebSocket连接
+                // create WebSocket connection
                 createWebSocketConnection(taskId);
 
-                // 等待确保WebSocket连接已建立
+                // Wait to ensure that the WebSocket connection has been established
                 await new Promise(resolve => setTimeout(resolve, 500));
 
-                // 创建FormData对象
+                // Create the FormData object
                 const formData = new FormData();
                 formData.append('file', file);
-                formData.append('task_id', taskId);  // 添加任务ID
+                formData.append('task_id', taskId);  // Add task ID
 
-                // 发送上传请求
-                console.log(`发送文件上传请求, 任务ID: ${taskId}`);
+                // Send the upload request
+                console.log(`Send file upload request, task ID: ${taskId}`);
                 const response = await fetch(`${config.apiBaseUrl}/api/upload`, {
                     method: 'POST',
                     body: formData
                 });
 
                 if (!response.ok) {
-                    throw new Error(`上传失败: ${response.status} ${await response.text()}`);
+                    throw new Error(`Upload failed: ${response.status} ${await response.text()}`);
                 }
 
                 const result = await response.json();
-                console.log(`文件上传API响应成功: ${JSON.stringify(result)}`);
+                console.log(`The file upload API response was successful: ${JSON.stringify(result)}`);
 
-                // 设置一个特别长的超时，专门针对PDF文件
+                // Set a particularly long timeout specifically for PDF files
                 if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-                    // 对于PDF文件，使用5分钟超时
+                    // For PDF files, use a 5-minute timeout
                     let resultReceived = false;
 
-                    // 设置一个轮询机制，定期检查结果
+                    // Set up a polling mechanism to check the results regularly
                     const pollInterval = setInterval(async () => {
                         if (resultReceived || typingIndicator.style.display !== 'block') {
                             clearInterval(pollInterval);
                             return;
                         }
 
-                        console.log(`轮询检查任务 ${taskId} 的PDF处理结果...`);
+                        console.log(`Poll the inspection task ${taskId}  PDF processing result...`);
                         try {
                             const pollResponse = await fetch(`${config.apiBaseUrl}/api/result/${taskId}`);
                             if (pollResponse.ok) {
                                 const pollResult = await pollResponse.json();
 
-                                // 检查是否有有效的PDF结果
+                                // Check if there are valid PDF results
                                 if (pollResult.type === 'pdf' && pollResult.content && pollResult.content.trim() !== '') {
-                                    console.log('通过轮询发现PDF结果');
+                                    console.log('Discover the PDF results through polling');
                                     resultReceived = true;
 
-                                    // 使用displayPdfResult显示结果
+                                    // Display the result using displayPdfResult
                                     typingIndicator.style.display = 'none';
                                     stopThinkingButton.style.display = 'none';
                                     displayPdfResult(pollResult);
 
-                                    // 自动发送提取的文本作为问题
+                                    // Automatically send the extracted text as the question
                                     if (pollResult.content && pollResult.content.trim() !== '') {
                                         messageInput.value = pollResult.content;
                                         sendMessage();
                                     }
 
-                                    // 清除轮询
+                                    // clear Interval
                                     clearInterval(pollInterval);
                                 }
                             }
                         } catch (pollError) {
-                            console.error('轮询出错:', pollError);
+                            console.error('Poll Error:', pollError);
                         }
-                    }, 10000); // 每10秒轮询一次
+                    }, 10000); // Poll every 10 second
 
-                    // 主超时控制
+                    // Main timeout control
                     setTimeout(() => {
                         if (!resultReceived && typingIndicator.style.display === 'block') {
-                            console.log("PDF处理中，保持连接...");
-                            // 不显示超时错误，只在控制台记录
+                            console.log("PDF processing in progress. Keep the connection...");
+                            // Do not display the timeout error. Only record it in the console
                         }
-                    }, 300000); // 5分钟
+                    }, 300000); // 5 minutes
                 } else {
-                    // 对于其他文件类型，使用正常超时
+                    // For other file types, use the normal timeout
                     setTimeout(() => {
                         if (typingIndicator.style.display === 'block') {
-                            console.log("响应超时，可能是WebSocket连接问题");
+                            console.log("The response timeout might be a WebSocket connection issue");
                             typingIndicator.style.display = 'none';
                             stopThinkingButton.style.display = 'none';
                             addMessageToChat('system', '<?= t('response_timeout') ?>', true);
                         }
-                    }, 60000); // 1分钟
+                    }, 60000); // 1 minutes
                 }
 
             } catch (error) {
-                console.error('文件上传失败:', error);
+                console.error('File Upload failed:', error);
                 addMessageToChat('system', `<?= t('fault') ?>: ${error.message}`, true);
                 typingIndicator.style.display = 'none';
                 stopThinkingButton.style.display = 'none';
             }
 
-            // 清除文件输入
+            // Clear the file input
             fileInput.value = '';
         }
 
-        // 添加消息到聊天
+        // Add messages to the chat
         function addMessageToChat(type, content, isError = false, shouldSaveToDb = true) {
-            // 检查是否已经存在相同的消息
+            // Check whether the same message already exists
             const existingMessages = chatBox.querySelectorAll(`.${type}-message`);
             for (let msg of existingMessages) {
                 if (msg.querySelector('.message-content').textContent === content) {
-                    console.log('消息已存在，跳过添加');
+                    console.log('The message already exists. Skip adding it');
                     return;
                 }
             }
@@ -1708,18 +1729,18 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
 
             chatBox.appendChild(messageElem);
 
-            // 自动滚动到底部
+            // Automatically scroll to the bottom
             chatBox.scrollTop = chatBox.scrollHeight;
 
-            // 如果是机器人消息，保存最后的回复
+            // If it is a robot message, save the final reply
             if (type === 'bot') {
                 lastBotMessage = content;
             }
 
-            // 添加到聊天历史
+            // Add to chat history
             chatHistory.push({type: type, content: content});
 
-            // 只有当shouldSaveToDb为true且不是错误消息时才保存到数据库
+            // It is saved to the database only when shouldSaveToDb is true and it is not an error message
             if (shouldSaveToDb && config.conversationId && !isError) {
                 const messageRole = type === 'bot' ? 'assistant' : type;
                 fetch('db_add_message.php', {
@@ -1733,28 +1754,28 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                         content: content
                     })
                 }).catch(error => {
-                    console.error('保存消息到数据库失败:', error);
+                    console.error('Failed to save the message to the database:', error);
                 });
             }
         }
 
-        // 清空聊天
+        // Clean Chat
         async function clearChat() {
-            // 清空聊天框内容和历史记录
+            // Clear the content of the chat box and the historical records
             chatBox.innerHTML = '';
             chatHistory = [];
             lastBotMessage = null;
             
-            // 隐藏PDF快捷按钮
+            // Hide the PDF shortcut button
             hidePdfQuickActions();
             
-            // 添加欢迎消息，不保存到数据库
+            // Add a welcome message and do not save it to the database
             addMessageToChat('system', '<?= t('chat_welcome') ?>', false, false);
             
-            // 重置当前对话ID
+            // Reset the current dialogue ID
             config.conversationId = null;
             
-            // 更新会话ID到PHP会话
+            // Update the session ID to the PHP session
             await fetch('update_session.php', {
                 method: 'POST',
                 headers: {
@@ -1765,15 +1786,15 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                 })
             });
 
-            // 移除当前活跃对话的高亮显示
+            //  Remove the highlighting of the current active conversation
             document.querySelectorAll('.conversation-item').forEach(item => {
                 item.classList.remove('active');
             });
         }
 
-        // 开始新对话
+        // Start a new conversation
         function startNewChat() {
-            // 关闭当前的WebSocket连接
+            // Close the current WebSocket connection
             if (activeWs) {
                 activeWs.close();
                 activeWs = null;
@@ -1782,42 +1803,42 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
             clearChat();
         }
 
-        // 保存配置
+        // Save the configuration
         function saveConfig() {
             config.apiKey = apiKeyInput.value.trim();
             config.apiBaseUrl = apiBaseUrlInput.value.trim();
             config.wsBaseUrl = wsBaseUrlInput.value.trim();
             config.modelName = modelNameInput.value.trim();
 
-            // 保存到本地存储
+            // Save to local storage
             localStorage.setItem('apiKey', config.apiKey);
             localStorage.setItem('apiBaseUrl', config.apiBaseUrl);
             localStorage.setItem('wsBaseUrl', config.wsBaseUrl);
             localStorage.setItem('modelName', config.modelName);
 
-            // 关闭模态框
+            // Close the modal box
             configModal.style.display = 'none';
 
-            // 显示成功消息
+            // Display the success message
             addMessageToChat('system', '<?= t('button_save_config') ?>');
         }
 
-        // 重新生成最后的消息
+        // Regenerate the final message
         function regenerateLastMessage() {
             const lastUserMessage = chatHistory.filter(msg => msg.type === 'user').pop();
             if (lastUserMessage) {
-                // 删除最后一条机器人消息
+                // Delete the last robot message
                 const lastBotIndex = chatHistory.findIndex(msg => msg.type === 'bot');
                 if (lastBotIndex !== -1) {
                     chatHistory.splice(lastBotIndex, 1);
-                    // 更新UI
+                    // Update UI
                     const botMessages = document.querySelectorAll('.bot-message');
                     if (botMessages.length > 0) {
                         botMessages[botMessages.length - 1].remove();
                     }
                 }
 
-                // 重新发送最后一条用户消息
+                // Resend the last user message
                 messageInput.value = lastUserMessage.content;
                 sendMessage();
             } else {
@@ -1825,7 +1846,7 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
             }
         }
 
-        // 复制最后的回复
+        // Copy the final reply
         function copyLastReply() {
             if (lastBotMessage) {
                 navigator.clipboard.writeText(lastBotMessage)
@@ -1833,7 +1854,7 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                         addMessageToChat('system', '<?= t('been_copyed') ?>');
                     })
                     .catch(err => {
-                        console.error('无法复制文本:', err);
+                        console.error('The text cannot be copied:', err);
                         addMessageToChat('system', '<?= t('fail_to_copy') ?>', true);
                     });
             } else {
@@ -1841,22 +1862,22 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
             }
         }
 
-        // 清除输入字段
+        // Clear the input fields
         function clearInputField() {
             messageInput.value = '';
             messageInput.focus();
         }
 
-        // 测试API连接
+        //  Test API connection
         async function testApi() {
-            // 显示测试中消息
+            //  Display the messages in the test
             addMessageToChat('system', '<?= t('test_api') ?>');
 
-            // 首先检查服务器连接
+            // Check the server connection
             if (!await checkServerConnection()) {
                 addMessageToChat('system', '<?= t('check_server') ?>', true);
 
-                // 显示测试结果模态框
+                // Display the modal box of the test results
                 testResultContent.textContent = `<?= t('api_unconnect') ?> (${config.apiBaseUrl})\n`;
                 testResultModal.style.display = 'flex';
 
@@ -1867,13 +1888,13 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                 const response = await fetch(`${config.apiBaseUrl}/api/test`);
 
                 if (!response.ok) {
-                    throw new Error(`API错误: ${response.status}`);
+                    throw new Error(`API Error: ${response.status}`);
                 }
 
                 const result = await response.json();
-                console.log('API测试结果:', result);
+                console.log('API test result:', result);
 
-                // 准备测试结果内容
+                // Prepare the content of the test results
                 let resultContent = '';
 
                 if (result.status === 'success') {
@@ -1903,11 +1924,11 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                     }
                 }
 
-                // 显示测试结果模态框
+                // Display the modal box of the test results
                 testResultContent.textContent = resultContent;
                 testResultModal.style.display = 'flex';
 
-                // 在聊天中显示简要结果
+                // Display the brief results in the chat
                 if (result.status === 'success') {
                     addMessageToChat('system', '<?= t('api_connect') ?>');
                 } else {
@@ -1915,18 +1936,18 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                 }
 
             } catch (error) {
-                console.error('<?= t('API连接失败') ?>:', error);
+                console.error('<?= t('API connection failed') ?>:', error);
 
-                // 在聊天中显示错误
+                // Display the error in the chat
                 addMessageToChat('system', `<?= t('api_connect_fail') ?>: ${error.message}`, true);
 
-                // 显示测试结果模态框
+                // Display the modal box of the test results
                 testResultContent.textContent = `❌ API connection test failed \n\n🔸 error message: ${error.message}\n\n Possible cause :\n- Backend service not running \n- Incorrect API base URL (${config.apiBaseUrl})\n- network connection issue`;
                 testResultModal.style.display = 'flex';
             }
         }
 
-        // 生成UUID
+        // Generate UUID
         function generateUUID() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 const r = Math.random() * 16 | 0;
@@ -1935,70 +1956,70 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
             });
         }
 
-        // 停止思考/生成
+        // Stop thinking / generating
         function stopThinking() {
-            console.log("用户点击停止思考按钮");
+            console.log("The user clicks the 'Stop Thinking' button");
 
-            // 如果WebSocket连接存在，发送停止消息
+            // If the WebSocket connection exists, send a stop message
             if (activeWs && activeWs.readyState === WebSocket.OPEN) {
                 try {
-                    console.log(`发送停止思考消息到WebSocket: ${currentTaskId}`);
+                    console.log(`Send the stop thinking message to WebSocket: ${currentTaskId}`);
                     activeWs.send(JSON.stringify({
                         type: "stop_thinking",
                         task_id: currentTaskId
                     }));
                 } catch (error) {
-                    console.error("发送停止思考消息失败:", error);
+                    console.error("Failed to send the stop thinking message:", error);
                 }
             }
 
-            // 关闭当前WebSocket连接
+            // Close the current WebSocket connection
             if (activeWs) {
-                console.log(`关闭WebSocket连接: ${currentTaskId}`);
+                console.log(`Close the WebSocket connection: ${currentTaskId}`);
                 activeWs.close();
                 activeWs = null;
             }
 
-            // 隐藏加载指示器
+            // Hide the loading indicator
             typingIndicator.style.display = 'none';
             stopThinkingButton.style.display = 'none';
 
-            // 添加系统消息
+            // Add system messages
             addMessageToChat('system', '<?= t('stop_generating') ?>');
         }
 
-        // 显示PDF结果
+        // Display the PDF result
         function displayPdfResult(resultJson) {
             try {
-                // 如果传入的是null或undefined，直接返回失败
+                // If null or undefined is passed in, return failure directly
                 if (!resultJson) {
-                    console.error('显示PDF结果失败: 结果为空');
+                    console.error('Failed to display PDF result: Result is empty');
                     addMessageToChat('system', '<?= t('unable_display') ?>', true);
                     return false;
                 }
 
-                // 将字符串解析为JSON对象（如果尚未解析）
+                // Parse the string into a JSON object (if it has not been parsed yet)
                 const result = typeof resultJson === 'string' ? JSON.parse(resultJson) : resultJson;
 
-                console.log('手动显示PDF处理结果:', result);
+                console.log('Manually display PDF processing result:', result);
 
-                // 验证必要的字段
+                // Verify the necessary fields
                 if (!result.type) {
-                    console.error('PDF结果缺少type字段:', result);
+                    console.error('The PDF result is missing the type field:', result);
                     addMessageToChat('system', '<?= t('pdf_deal') ?>', true);
                     return false;
                 }
 
-                // 隐藏任何加载指示器
+                //  Hide any loading indicators
                 typingIndicator.style.display = 'none';
                 stopThinkingButton.style.display = 'none';
 
-                // 显示上传的文件名
+                // Display the uploaded file name
                 if (result.file_name) {
                     addMessageToChat('system', `<?= t('uploaded') ?>: ${result.file_name}`);
                 }
 
-                // 根据类型处理不同的响应
+                // Handle different responses according to the type
                 if (result.type === 'pdf_timeout') {
                     addMessageToChat('system', result.content);
                     addMessageToChat('system', '<?= t('continue_deal') ?>', false);
@@ -2007,30 +2028,30 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                 } else if (result.type === 'pdf_unsupported') {
                     addMessageToChat('system', result.content);
                 } else if (result.type === 'pdf') {
-                    // 检查content是否有内容
+                    // Check if the content contains any content
                     if (result.content && result.content.trim() !== '') {
-                        console.log('显示PDF内容，长度:', result.content.length);
-                        // 显示PDF内容作为机器人回复
+                        console.log('Display PDF content，length:', result.content.length);
+                        // Display the PDF content as the robot's reply
                         addMessageToChat('bot', result.content);
-                        // 显示快捷按钮
+                        // Display quick buttons
                         showPdfQuickActions();
                     } else {
-                        console.error('PDF内容为空:', result);
+                        console.error('PDF content is empty:', result);
                         addMessageToChat('system', '<?= t('unable_display') ?>', true);
                     }
                 } else {
-                    console.warn('未知的PDF结果类型:', result.type);
-                    // 尝试显示内容，无论类型如何
+                    console.warn('Unknown PDF result type:', result.type);
+                    // Try to display the content, regardless of the type
                     if (result.content) {
                         addMessageToChat('bot', result.content);
-                        // 显示快捷按钮
+                        // Display quick buttons
                         showPdfQuickActions();
                     } else {
                         addMessageToChat('system', '<?= t('unknown_deal') ?>', true);
                     }
                 }
 
-                // 移除处理中的消息
+                // Remove the message in processing
                 const pdfProcessingMsg = document.querySelector('.system-message.pdf-processing');
                 if (pdfProcessingMsg) {
                     pdfProcessingMsg.remove();
@@ -2038,36 +2059,36 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
 
                 return true;
             } catch (e) {
-                console.error('解析或显示PDF结果时出错:', e);
-                console.error('原始结果:', resultJson);
+                console.error('An error occurred when parsing or displaying the PDF result:', e);
+                console.error('original result:', resultJson);
                 addMessageToChat('system', `<?= t('display_pdf_error') ?>: ${e.message}`, true);
                 return false;
             }
         }
 
-        // 添加用于测试的样本数据
-        // 你可以在浏览器控制台中输入 displayLatestPdfResult() 来显示测试结果
+        // Add sample data for testing
+        // The test results can be displayed by entering "displayLatestPdfResult()" in the browser console
         function displayLatestPdfResult() {
             const pdfResult = {"status": "success", "type": "pdf", "task_id": "783fe527-7b11-4fc7-9677-afe42220135d", "file_name": "783fe527-7b11-4fc7-9677-afe42220135d_fa9010e257bbb7782f3a4b1b3dacd4be.pdf", "content": "**Abstract**  \n• PG-SAM integrates medical LLMs (Large Language Models) to enhance multi-organ segmentation accuracy  \n• Proposed fine-grained modality prior aligner bridges domain gaps between text and medical images  \n• Multi-level feature fusion and iterative mask optimizer improve boundary precision  \n• Achieves state-of-the-art performance on Synapse dataset with $84.79\\%$ mDice  \n\n**Introduction**  \n• Segment Anything Model (SAM) underperforms in medical imaging due to domain gaps  \n• Existing methods suffer from coarse text priors and misaligned modality fusion  \n• PG-SAM introduces medical LLMs for fine-grained anatomical text prompts  \n• Key innovation: Joint optimization of semantic alignment and pixel-level details  \n\n**Related Work**  \n• Prompt-free SAM variants (e.g., SAMed, H-SAM) lack domain-specific priors  \n• CLIP-based alignment methods (e.g., TP-DRSeg) face granularity limitations  \n• Medical LLMs show potential but require integration with visual features  \n• PG-SAM uniquely combines LoRA-tuned CLIP with hierarchical feature fusion  \n\n**Methodology**  \n• Fine-grained modality prior aligner generates Semantic Guide Matrix $G \\in \\mathbb{R}^{B \\times L \\times L}$  \n• Multi-level feature fusion uses deformable convolution for edge preservation:  \n  $$F_{\\text{fusion}} = \\phi(F_{\\text{up}}^{(2)}) + \\psi(\\text{Align}(G; \\theta))$$  \n• Iterative mask optimizer employs hypernetwork for dynamic kernel generation:  \n  $$\\Omega_i = \\text{MLP}(m_i) \\odot W_{\\text{base}}$$  \n\n**Experiment**  \n• Synapse dataset: 3,779 CT slices with 8 abdominal organs  \n• Achieves $84.79\\%$ mDice (fully supervised) and $75.75\\%$ (10% data)  \n• Reduces HD95 to $7.61$ (↓$5.68$ vs. H-SAM) for boundary precision  \n• Ablation shows $+4.69\\%$ mDice gain from iterative mask optimization  \n\n**Conclusion**  \n• PG-SAM outperforms SOTA by integrating medical LLMs with SAM  \n• Fine-grained priors and multi-level fusion address modality misalignment  \n• Future work: Extend to 3D segmentation and real-time clinical applications  \n• Code available at https://github.com/logan-0623/PG-SAM"};
             displayPdfResult(pdfResult);
         }
 
-        // 注释掉自动显示样本结果的代码，使其不再自动运行
+        // Comment out the code that automatically displays the sample results to make it no longer run automatically
         // setTimeout(displayLatestPdfResult, 1000);
 
-        // 添加加载对话列表的函数
+        // Add the function for loading the conversation list
         async function loadConversations() {
             try {
-                console.log('正在加载对话列表...');
+                console.log('loading the list of conversations...');
                 const response = await fetch(`db_get_conversations.php?user_id=${config.userId}`);
                 const conversations = await response.json();
-                console.log('获取到对话列表:', conversations);
+                console.log('Get the list of conversations:', conversations);
                 
                 const conversationsList = document.getElementById('conversationsList');
                 conversationsList.innerHTML = '';
                 
                 if (conversations.length === 0) {
-                    // 如果没有对话，显示提示
+                    // If there is no dialogue, display a prompt
                     const emptyMessage = document.createElement('div');
                     emptyMessage.className = 'empty-conversations-message';
                     emptyMessage.textContent = '<?=t('message_no_history')?>';
@@ -2076,7 +2097,7 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                 }
                 
                 conversations.forEach(conv => {
-                    // 只显示属于当前用户的对话
+                    // Only display the conversations belonging to the current user
                     if (parseInt(conv.user_id) === parseInt(config.userId)) {
                         const item = document.createElement('div');
                         item.className = 'conversation-item';
@@ -2086,7 +2107,7 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                         
                         const title = document.createElement('div');
                         title.className = 'conversation-title';
-                        title.textContent = conv.title || '新对话';
+                        title.textContent = conv.title || 'New Cconversation';
                         title.dataset.id = conv.id;
                         
                         const deleteBtn = document.createElement('span');
@@ -2106,27 +2127,27 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                     }
                 });
             } catch (error) {
-                console.error('加载对话列表失败:', error);
+                console.error('Failed to load the dialogue list:', error);
                 addMessageToChat('system', '<?= t('load_diolog_error') ?>', true);
             }
         }
 
-        // 切换对话
+        // Switch conversation
         async function switchConversation(conversationId) {
             try {
-                // 验证对话所有权
+                // Verify dialogue ownership
                 const response = await fetch(`db_verify_conversation.php?conversation_id=${conversationId}&user_id=${config.userId}`);
                 const result = await response.json();
                 if (!result.valid) {
-                    console.error('无权访问该对话');
+                    console.error('No right to access this conversation');
                     addMessageToChat('system', '<?= t('No_access_conversations') ?>', true);
                     return;
                 }
 
-                console.log('切换到对话:', conversationId);
+                console.log('Switch to Conversation:', conversationId);
                 config.conversationId = conversationId;
                 
-                // 更新会话ID到PHP会话
+                // Update the session ID to the PHP session
                 await fetch('update_session.php', {
                     method: 'POST',
                     headers: {
@@ -2137,14 +2158,14 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                     })
                 });
                 
-                // 清空当前聊天框
+                // Clear the current chat box
                 chatBox.innerHTML = '';
                 chatHistory = [];
                 
-                // 重新加载消息
+                // Reload the message
                 await loadChatHistory();
                 
-                // 更新对话列表UI
+                // Update the dialogue list UI
                 document.querySelectorAll('.conversation-item').forEach(item => {
                     item.classList.remove('active');
                     const titleElem = item.querySelector('.conversation-title');
@@ -2154,12 +2175,12 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                 });
                 
             } catch (error) {
-                console.error('切换对话失败:', error);
+                console.error('Conversation switching failed:', error);
                 addMessageToChat('system', '<?= t('fail_switch_dialog') ?>', true);
             }
         }
 
-        // 删除对话
+        // Delete the conversation
         async function deleteConversation(conversationId) {
             if (!confirm('<?= t('determined_delete') ?>')) {
                 return;
@@ -2178,7 +2199,7 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                 
                 const result = await response.json();
                 if (result.status === 'success') {
-                    // 从界面上移除对话按钮
+                    // Remove the dialogue button from the interface
                     const conversationItems = document.querySelectorAll('.conversation-item');
                     for (let item of conversationItems) {
                         const titleElem = item.querySelector('.conversation-title');
@@ -2188,32 +2209,32 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
                         }
                     }
 
-                    // 如果删除的是当前对话，清空聊天内容
+                    // If what is deleted is the current conversation, clear the chat content
                     if (parseInt(conversationId) === parseInt(config.conversationId)) {
                         chatBox.innerHTML = '';
                         addMessageToChat('system', '<?= t('chat_welcome') ?>', false, false);
                         config.conversationId = null;
                     }
 
-                    // 检查是否还有其他对话
+                    // Check if there are any other conversations
                     const conversationsList = document.getElementById('conversationsList');
                     if (conversationsList.children.length === 0) {
-                        // 如果没有对话，显示提示消息
+                        // If there is no dialogue, display a prompt message
                         const emptyMessage = document.createElement('div');
                         emptyMessage.className = 'empty-conversations-message';
                         emptyMessage.textContent = '<?=t('message_no_history')?>';
                         conversationsList.appendChild(emptyMessage);
                     }
                 } else {
-                    throw new Error(result.message || '删除对话失败');
+                    throw new Error(result.message || 'Failed to delete the conversation');
                 }
             } catch (error) {
-                console.error('删除对话失败:', error);
+                console.error('Failed to delete the conversation:', error);
                 addMessageToChat('system', '<?= t('fail_delete_dialog') ?>', true);
             }
         }
 
-        // 切换模型
+        // Switch the model
         function toggleModel() {
             if (config.modelName === 'deepseek-chat') {
                 config.modelName = 'deepseek-reasoner';
@@ -2227,32 +2248,32 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
             localStorage.setItem('modelName', config.modelName);
         }
 
-        // 显示PDF快捷按钮
+        // Display the PDF shortcut button
         function showPdfQuickActions() {
             const quickActions = document.getElementById('pdfQuickActions');
             quickActions.style.display = 'flex';
         }
 
-        // 隐藏PDF快捷按钮
+        // Hide the PDF shortcut button
         function hidePdfQuickActions() {
             const quickActions = document.getElementById('pdfQuickActions');
             quickActions.style.display = 'none';
         }
 
-        // 发送快捷问题
+        // Send quick questions
         function sendQuickQuestion(questionType) {
             messageInput.value = questionType;
             sendMessage();
         }
 
-        // 搜索对话
+        //  Search the conversation
         function searchConversations(searchText) {
             const searchResults = document.getElementById('searchResults');
             const conversationItems = document.querySelectorAll('.conversation-item');
             const searchLower = searchText.toLowerCase();
             let hasResults = false;
             
-            // 清空之前的结果
+            // Clear the previous results
             searchResults.innerHTML = '';
             
             if (searchText.trim() === '') {
@@ -2288,13 +2309,41 @@ $initial_message = isset($_POST['message']) ? htmlspecialchars($_POST['message']
             searchResults.style.display = 'block';
         }
 
-        // 处理点击外部区域关闭下拉框
+        // Handle clicking on the external area to close the drop-down box
         function handleClickOutside(event) {
             const searchBox = document.querySelector('.search-box');
             if (!searchBox.contains(event.target)) {
                 document.getElementById('searchResults').style.display = 'none';
             }
         }
+
+        // Add event listeners for the logout button
+        const logoutButton = document.getElementById('logoutButton');
+				logoutButton.addEventListener('click', async () => {
+    				if (confirm('<?= t('confirm_logout') ?>')) {
+        				try {
+            				const response = await fetch('user_logout.php', {
+                				method: 'POST',
+                				headers: {
+                    				'Content-Type': 'application/json',
+                				}
+            				});
+
+            				const result = await response.json();
+            
+            				if (result.success) {
+                				localStorage.clear();
+                				// Use the redirect or default path returned by the server
+                				window.location.href = result.redirect || 'user_login.php';
+            				} else {
+                				throw new Error(result.message || '<?= t('logout_failed') ?>');
+            				}
+        				} catch (error) {
+            				console.error('Logout failed:', error);
+            				addMessageToChat('system', `<?= t('fault') ?>: ${error.message}`, true);
+        				}
+    				}
+				});
     </script>
    <script>
   document.getElementById('langSwitch').addEventListener('change', e => {

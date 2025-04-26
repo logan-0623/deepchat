@@ -79,6 +79,8 @@
     "server_info":"服务器信息",
     "detailed_error":"详细错误信息",
     "determined_delete":"确定要删除此对话吗？",
-    "no_diolog":"没有找到相关对话"
-    
-  }
+    "no_diolog":"没有找到相关对话",
+    "button_logout": "退出登录",
+    "confirm_logout": "确定要退出登录吗？",
+    "logout_failed": "退出登录失败，请重试"
+}
