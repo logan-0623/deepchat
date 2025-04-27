@@ -3,6 +3,10 @@
 ## System Overview
 DeepChat is an AI-powered chat application with both web interface and local deployment options. The system supports real-time conversations and PDF file processing.
 
+## Documentation
+- [User Manual](USER_MANUAL.md) - Complete guide for using DeepChat
+- [System Access Guide](README.md) - Installation and setup instructions
+
 ## Access Methods
 
 ### 1. Web Version (Recommended)
