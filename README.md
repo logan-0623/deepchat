@@ -15,6 +15,7 @@ DeepChat is an AI chat application that supports both text conversations and PDF
 ├── backend.py  # Backend service entry
 ├── start_backend.sh  # (Linux/Mac)
 ├── start_backend.bat  # (Windows)
+├── aichat.sql  # SQL
 ├── runs/  # Task result storage directory
 ├── uploads/  # Upload file storage directory
 ├── cache/  # Cache directory
