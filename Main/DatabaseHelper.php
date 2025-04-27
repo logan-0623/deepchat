@@ -5,8 +5,8 @@ class DatabaseHelper {
     public function __construct() {
         // Database connection configuration
         $host = '127.0.0.1';  // Use IP address instead of localhost
-        $db   = 'aichat';    // Database name
-        $user = 'root';      // Database username
+        $db   = 'deepchat';    // Database name
+        $user = 'Deepchat';      // Database username
         $pass = '126912';          // Database password
         $charset = 'utf8mb4';
 
@@ -214,6 +214,32 @@ class DatabaseHelper {
             error_log("Failed to fetch messages: " . $e->getMessage());
             throw new Exception("Failed to fetch messages: " . $e->getMessage());
         }
+    }
+
+    public function adminLogin($username, $password) {
+        $sql = "SELECT * FROM admins WHERE username = ?";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$username]);
+        $result = $stmt->fetch();
+        
+        if ($result && password_verify($password, $result['password'])) {
+            // 更新最后登录时间
+            $updateSql = "UPDATE admins SET last_login = CURRENT_TIMESTAMP WHERE id = ?";
+            $updateStmt = $this->pdo->prepare($updateSql);
+            $updateStmt->execute([$result['id']]);
+            
+            return $result;
+        }
+        return false;
+    }
+
+    public function createAdmin($username, $password, $email) {
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        $sql = "INSERT INTO admins (username, password, email) VALUES (?, ?, ?)";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$username, $hashedPassword, $email]);
+        
+        return $stmt->rowCount() > 0;
     }
 }
 ?>

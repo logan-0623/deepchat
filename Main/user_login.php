@@ -182,6 +182,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <div class="register-link">
                    Don't have an account yet?<a href="user_register.php">Sign up now</a>
                 </div>
+                
+                <div class="admin-link" style="text-align: center; margin-top: 1rem;">
+                    <a href="admin_login.php" style="color: #667eea; text-decoration: none; font-weight: 600;">Administrator login</a>
+                </div>
             </form>
         </div>
     </div>
