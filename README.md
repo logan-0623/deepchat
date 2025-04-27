@@ -112,6 +112,18 @@ Open your browser and go to:
 http://localhost:8001/Main/Chat_Interface.php
 ```
 
+# Web Version Access
+
+You can also access DeepChat through the web version:
+
+1. Visit [https://mynamedeepchat.xyz/](https://mynamedeepchat.xyz/) in your browser
+2. Then run locally:
+   ```bash
+   cd deepchat
+   conda activate ai
+   python backend.py
+   ```
+
 ## Features
 
 - Real-time chat with AI
