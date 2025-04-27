@@ -82,11 +82,6 @@
    - Reduce response length in settings
    - Try refreshing the page
 
-### Getting Help
-- Visit the help center at [https://mynamedeepchat.xyz/help](https://mynamedeepchat.xyz/help)
-- Contact support at support@mynamedeepchat.xyz
-- Check the FAQ section for common questions
-
 ## Best Practices
 
 ### For Optimal Performance
